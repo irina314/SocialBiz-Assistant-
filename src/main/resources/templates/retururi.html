@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Retururi &amp; Impact ROAS — SocialBiz</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:white;height:100vh;position:fixed;display:flex;flex-direction:column;padding:24px 16px;border-right:1px solid #eee;z-index:10}
+        .sidebar-brand h2{color:#6c47ff;font-size:16px;font-weight:700}
+        .sidebar-brand p{font-size:12px;color:#aaa;margin-top:2px}
+        .sidebar nav{margin-top:28px;flex:1;overflow-y:auto}
+        .sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;text-decoration:none;color:#555;border-radius:10px;margin-bottom:4px;font-size:14px}
+        .sidebar nav a:hover{background:#f5f0ff;color:#6c47ff}
+        .sidebar nav a.active{background:#f0ebff;color:#6c47ff;font-weight:500}
+        .sidebar-footer{background:#6c47ff;border-radius:10px;padding:12px;color:white;font-size:12px;margin-top:16px}
+        .main{margin-left:220px;padding:32px;flex:1;max-width:calc(100vw - 220px)}
+        /* Header */
+        .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px}
+        .page-header h1{font-size:24px;font-weight:600;color:#1a1a1a}
+        .page-header p{color:#888;font-size:14px;margin-top:4px}
+        .btn-primary{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:#6c47ff;color:white;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-weight:500;text-decoration:none}
+        .btn-primary:hover{background:#5a38e0}
+        /* ROAS Impact Banner */
+        .roas-banner{border-radius:14px;padding:20px 24px;margin-bottom:22px;border:2px solid}
+        .roas-banner.distorsionat{background:#fff8e6;border-color:#f5c842}
+        .roas-banner.ok{background:#eaf8f2;border-color:#1D9E75}
+        .roas-banner-title{font-size:15px;font-weight:700;margin-bottom:6px}
+        .roas-compare{display:flex;align-items:center;gap:24px;margin-top:14px;flex-wrap:wrap}
+        .roas-box{text-align:center;padding:14px 22px;border-radius:12px;min-width:120px}
+        .roas-box-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+        .roas-box-value{font-size:32px;font-weight:800;line-height:1}
+        .roas-box-sub{font-size:11px;margin-top:4px}
+        .roas-arrow{font-size:28px;color:#aaa;flex-shrink:0}
+        .roas-box.aparent{background:#fff3cd;border:1px solid #ffc107}
+        .roas-box.aparent .roas-box-label{color:#856404}
+        .roas-box.aparent .roas-box-value{color:#856404}
+        .roas-box.real{background:#d4edda;border:1px solid #1D9E75}
+        .roas-box.real .roas-box-label{color:#155724}
+        .roas-box.real .roas-box-value{color:#155724}
+        .roas-box.pierdere{background:#fce8e8;border:1px solid #E24B4A}
+        .roas-box.pierdere .roas-box-label{color:#A32D2D}
+        .roas-box.pierdere .roas-box-value{color:#E24B4A}
+        .roas-explain{font-size:13px;color:#555;margin-top:12px;line-height:1.6;max-width:700px}
+        /* KPI Row */
+        .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+        .kpi{background:white;border-radius:12px;padding:16px 18px;border:1px solid #eee}
+        .kpi-label{font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+        .kpi-value{font-size:22px;font-weight:700;line-height:1;margin-bottom:3px}
+        .kpi-sub{font-size:11px;color:#aaa}
+        /* Layout */
+        .two-col{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-bottom:22px}
+        .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:22px}
+        .card{background:white;border-radius:14px;border:1px solid #eee;overflow:hidden}
+        .card-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #f0f0f0}
+        .card-title{font-size:14px;font-weight:600;color:#1a1a1a}
+        .card-sub{font-size:12px;color:#aaa}
+        .card-body{padding:18px 20px}
+        /* Table */
+        table{width:100%;border-collapse:collapse}
+        thead th{padding:10px 14px;text-align:left;font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px;background:#fafafa;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+        tbody td{padding:12px 14px;font-size:13px;color:#333;border-bottom:1px solid #f7f7f7;vertical-align:middle}
+        tbody tr:last-child td{border-bottom:none}
+        tbody tr:hover td{background:#fafafa}
+        /* Badges */
+        .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;display:inline-block;white-space:nowrap}
+        .badge-astept{background:#fff3cd;color:#856404}
+        .badge-aprobat{background:#d4edda;color:#155724}
+        .badge-respins{background:#fce8e8;color:#A32D2D}
+        .badge-sursa{background:#f0ebff;color:#6c47ff;font-size:10px}
+        /* Bars */
+        .impact-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+        .impact-row:last-child{margin-bottom:0}
+        .impact-label{font-size:12px;color:#444;width:100px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .impact-track{flex:1;height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden}
+        .impact-fill{height:100%;border-radius:4px;background:#E24B4A}
+        .impact-val{font-size:12px;color:#E24B4A;font-weight:600;width:90px;text-align:right;flex-shrink:0}
+        /* Motive */
+        .motiv-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f7f7f7;font-size:13px}
+        .motiv-row:last-child{border-bottom:none}
+        .motiv-count{background:#fce8e8;color:#A32D2D;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+        /* Actions */
+        .btn-sm{padding:4px 12px;border-radius:7px;font-size:12px;border:none;cursor:pointer;font-weight:500}
+        .btn-approve{background:#d4edda;color:#155724}
+        .btn-reject{background:#fce8e8;color:#A32D2D}
+        .btn-del{background:#f5f5f5;color:#888}
+        /* Empty */
+        .empty{text-align:center;padding:50px 20px;color:#aaa}
+        /* Modal */
+        .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+        .overlay.open{display:flex}
+        .modal{background:white;border-radius:16px;width:580px;max-height:92vh;overflow-y:auto;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,.18)}
+        .modal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+        .modal-title{font-size:20px;font-weight:600}
+        .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#aaa}
+        .form-group{margin-bottom:14px}
+        .form-group label{display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;outline:none;background:#fafafa;font-family:inherit}
+        .form-group input:focus,.form-group select:focus{border-color:#6c47ff;background:white}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .form-section{font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;margin:18px 0 12px}
+        .form-hint{font-size:11px;color:#aaa;margin-top:4px}
+        .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid #f0f0f0}
+        .btn-cancel{padding:9px 20px;border:1px solid #e5e5e5;border-radius:9px;background:white;font-size:13px;cursor:pointer;color:#555}
+        .btn-save{padding:9px 22px;background:#6c47ff;color:white;border:none;border-radius:9px;font-size:13px;cursor:pointer;font-weight:500}
+        /* Retur items table in modal */
+        .items-table{width:100%;border-collapse:collapse;margin-top:8px}
+        .items-table th{padding:8px 10px;font-size:11px;color:#888;text-align:left;background:#fafafa;border-bottom:1px solid #eee}
+        .items-table td{padding:8px 10px;font-size:13px;border-bottom:1px solid #f5f5f5}
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}" class="active">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit" style="width:100%;padding:10px 12px;background:none;border:none;text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:10px">← Deconectează-te</button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Platforma ta de vânzări</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h1>↩ Retururi &amp; Impact ROAS</h1>
+            <p>Gestionează retururile și vezi impactul lor real asupra performanței campaniilor</p>
+        </div>
+        <button class="btn-primary"
+                onclick="document.getElementById('modalAdauga').classList.add('open')">
+            + Retur Nou
+        </button>
+    </div>
+
+    <!-- ROAS IMPACT BANNER — argumentul central din teză vizualizat -->
+    <div class="roas-banner" th:classappend="${roasDistorsionat} ? ' distorsionat' : ' ok'">
+        <div class="roas-banner-title"
+             th:text="${roasDistorsionat}
+                ? '⚠️ ROAS-ul tău este distorsionat de retururi — cifra reală este mai mică'
+                : '✅ ROAS-ul reflectă corect situația — retururile nu distorsionează semnificativ'">
+        </div>
+        <div class="roas-compare">
+            <div class="roas-box aparent">
+                <div class="roas-box-label">ROAS Aparent</div>
+                <div class="roas-box-value" th:text="${roasAparent} + 'x'">0x</div>
+                <div class="roas-box-sub">Cum îl vede platforma de reclame</div>
+            </div>
+            <div class="roas-arrow">→</div>
+            <div class="roas-box real">
+                <div class="roas-box-label">ROAS Real</div>
+                <div class="roas-box-value" th:text="${roasReal} + 'x'">0x</div>
+                <div class="roas-box-sub">După scăderea rambursărilor</div>
+            </div>
+            <div class="roas-arrow" th:if="${roasDistorsionat}">→</div>
+            <div class="roas-box pierdere" th:if="${roasDistorsionat}">
+                <div class="roas-box-label">Diferență</div>
+                <div class="roas-box-value" th:text="'−' + ${diferentaROAS} + 'x'">0x</div>
+                <div class="roas-box-sub">Ascunsă fără integrare retururi</div>
+            </div>
+            <div style="flex:1;max-width:340px" th:if="${roasDistorsionat}">
+                <div style="background:#fff3cd;border-radius:10px;padding:12px 14px;font-size:12px;color:#856404;line-height:1.5">
+                    <strong>De ce contează?</strong> Platforma de reclame (Meta/Google) calculează
+                    ROAS-ul din venitul brut al comenzilor. Nu știe de retururile aprobate ulterior.
+                    Venit brut: <strong th:text="${venitBrut} + ' RON'">0</strong> →
+                    Venit net după retururi: <strong th:text="${venitNet} + ' RON'">0</strong>
+                    (−<span th:text="${totalRambursari} + ' RON rambursați'">0</span>).
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+        <div class="kpi" style="border-left:4px solid #f5a623">
+            <div class="kpi-label">În Așteptare</div>
+            <div class="kpi-value" style="color:#f5a623" th:text="${nrInAsteptare}">0</div>
+            <div class="kpi-sub">necesită decizie</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #1D9E75">
+            <div class="kpi-label">Aprobate</div>
+            <div class="kpi-value" style="color:#1D9E75" th:text="${nrAprobate}">0</div>
+            <div class="kpi-sub">rambursate</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #888">
+            <div class="kpi-label">Respinse</div>
+            <div class="kpi-value" style="color:#888" th:text="${nrRespinse}">0</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #E24B4A">
+            <div class="kpi-label">Total Rambursări</div>
+            <div class="kpi-value" style="color:#E24B4A;font-size:18px"
+                 th:text="${totalRambursari} + ' RON'">0</div>
+            <div class="kpi-sub">bani ieșiți din firmă</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #6c47ff">
+            <div class="kpi-label">Rată Retur</div>
+            <div class="kpi-value" style="color:#6c47ff" th:text="${rataRetururi} + '%'">0%</div>
+            <div class="kpi-sub">din total comenzi</div>
+        </div>
+    </div>
+
+    <!-- Impact per sursa + per influencer + motive -->
+    <div class="three-col">
+
+        <!-- Impact per canal -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title">Rambursări pe Canal</div>
+                <div class="card-sub">RON pierdut per sursă</div>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(impactPerSursa)}"
+                     style="text-align:center;color:#aaa;padding:20px 0;font-size:13px">
+                    Niciun retur cu sursă înregistrată
+                </div>
+                <div th:each="row,i : ${impactPerSursa}" class="impact-row"
+                     th:with="maxVal=${impactPerSursa[0].valoare}">
+                    <div class="impact-label" th:text="${row.sursa}">—</div>
+                    <div class="impact-track">
+                        <div class="impact-fill"
+                             th:style="'width:' + ${maxVal > 0 ? (row.valoare / maxVal * 100) : 0} + '%'"></div>
+                    </div>
+                    <div class="impact-val"
+                         th:text="${#numbers.formatDecimal(row.valoare,1,2)} + ' RON'">0</div>
+                </div>
+                <div th:if="${!#lists.isEmpty(impactPerSursa)}"
+                     style="margin-top:12px;padding-top:10px;border-top:1px solid #f5f5f5;font-size:11px;color:#aaa;line-height:1.5">
+                    💡 Canalele cu rambursări mari pot indica probleme de calitate a traficului
+                    sau audiență nepotrivită.
+                </div>
+            </div>
+        </div>
+
+        <!-- Impact per influencer -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title">Rambursări per Influencer</div>
+                <div class="card-sub">Cod promo → retur</div>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(impactPerInfluencer)}"
+                     style="text-align:center;color:#aaa;padding:20px 0;font-size:13px">
+                    Niciun retur cu cod promo înregistrat
+                </div>
+                <div th:each="row : ${impactPerInfluencer}" class="impact-row"
+                     th:with="maxVal=${impactPerInfluencer[0].valoare}">
+                    <div class="impact-label">
+                        <span style="background:#f0ebff;color:#6c47ff;padding:2px 6px;border-radius:5px;font-size:10px;font-weight:700"
+                              th:text="${row.cod}">—</span>
+                    </div>
+                    <div class="impact-track">
+                        <div class="impact-fill"
+                             th:style="'width:' + ${maxVal > 0 ? (row.valoare / maxVal * 100) : 0} + '%'"></div>
+                    </div>
+                    <div class="impact-val"
+                         th:text="${#numbers.formatDecimal(row.valoare,1,2)} + ' RON'">0</div>
+                </div>
+                <div th:if="${!#lists.isEmpty(impactPerInfluencer)}"
+                     style="margin-top:12px;padding-top:10px;border-top:1px solid #f5f5f5;font-size:11px;color:#aaa;line-height:1.5">
+                    💡 Un influencer cu retur mare poate atrage audiențe nepotrivite
+                    produsului tău.
+                </div>
+            </div>
+        </div>
+
+        <!-- Motive -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title">Motive Retururi</div>
+                <div class="card-sub">Cauze frecvente</div>
+            </div>
+            <div class="card-body">
+                <div th:if="${#maps.isEmpty(motiveGrupate)}"
+                     style="text-align:center;color:#aaa;padding:20px 0;font-size:13px">
+                    Niciun motiv înregistrat
+                </div>
+                <div th:each="entry : ${motiveGrupate}" class="motiv-row">
+                    <span style="font-size:13px;color:#333" th:text="${entry.key}">—</span>
+                    <span class="motiv-count" th:text="${entry.value} + ' retururi'">0</span>
+                </div>
+                <div th:if="${!#maps.isEmpty(motiveGrupate)}"
+                     style="margin-top:12px;padding-top:10px;border-top:1px solid #f5f5f5;font-size:11px;color:#aaa;line-height:1.5">
+                    💡 Motivele frecvente indică probleme de produs sau descriere ce pot fi corectate.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel retururi -->
+    <div class="card">
+        <div class="card-head">
+            <div>
+                <div class="card-title">Toate Retururile</div>
+                <div class="card-sub" th:text="${#lists.size(retururi)} + ' înregistrate'">0</div>
+            </div>
+        </div>
+
+        <!-- Toolbar filtre -->
+        <div th:unless="${#lists.isEmpty(retururi)}" style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+            <div style="position:relative;flex:1;min-width:200px">
+                <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#aaa">🔍</span>
+                <input type="text" id="searchRetururi" placeholder="Caută după client, nr. comandă..."
+                       oninput="filtreazaRetururi()"
+                       style="width:100%;padding:9px 12px 9px 34px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:white;outline:none"/>
+            </div>
+            <select id="fltStatusRetur" onchange="filtreazaRetururi()"
+                    style="padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:white;outline:none;cursor:pointer">
+                <option value="">Toate statusurile</option>
+                <option value="IN_ASTEPTARE">⏳ În așteptare</option>
+                <option value="APROBAT">✅ Aprobat</option>
+                <option value="RESPINS">❌ Respins</option>
+            </select>
+        </div>
+
+        <div class="empty" th:if="${#lists.isEmpty(retururi)}">
+            <div style="font-size:40px;opacity:.25;margin-bottom:10px">↩</div>
+            <p style="font-size:14px;font-weight:500;color:#555;margin-bottom:6px">Niciun retur înregistrat</p>
+            <span style="font-size:13px">Retururile apar după ce le adaugi manual sau le asociezi cu o comandă</span>
+        </div>
+
+        <table th:unless="${#lists.isEmpty(retururi)}">
+            <thead>
+            <tr>
+                <th>Client</th>
+                <th>Nr. Comandă</th>
+                <th>Canal / Cod</th>
+                <th>Motiv</th>
+                <th>Valoare Retur</th>
+                <th>Data</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${retururi}"
+                th:attr="data-search=${r.numeClient + ' ' + (r.nrComanda ?: '')},data-status=${r.status.name()}">
+                <td>
+                    <div style="font-weight:500" th:text="${r.numeClient}">—</div>
+                    <div style="font-size:11px;color:#aaa" th:text="${r.telefon}">—</div>
+                </td>
+                <td style="font-size:12px;color:#6c47ff;font-weight:500"
+                    th:text="${r.nrComanda}">—</td>
+                <td>
+                    <div th:if="${r.sursaComanda != null}"
+                         class="badge badge-sursa"
+                         th:text="${r.sursaComanda}">—</div>
+                    <div th:if="${r.codPromotionalComanda != null}"
+                         style="margin-top:3px;font-size:10px;color:#6c47ff;font-weight:600"
+                         th:text="${r.codPromotionalComanda}">—</div>
+                    <span th:if="${r.sursaComanda == null and r.codPromotionalComanda == null}"
+                          style="color:#ddd;font-size:12px">—</span>
+                </td>
+                <td style="font-size:12px;max-width:150px" th:text="${r.motivRetur}">—</td>
+                <td style="font-weight:600;color:#E24B4A"
+                    th:text="${#numbers.formatDecimal(r.calculeazaTotal(),1,2)} + ' RON'">0</td>
+                <td style="font-size:11px;color:#aaa"
+                    th:text="${#temporals.format(r.dataCreare,'dd.MM.yy HH:mm')}">—</td>
+                <td>
+                        <span class="badge"
+                              th:classappend="${r.status.name() == 'IN_ASTEPTARE'} ? ' badge-astept' :
+                                             (${r.status.name() == 'APROBAT'} ? ' badge-aprobat' : ' badge-respins')"
+                              th:text="${r.status.name() == 'IN_ASTEPTARE'} ? '⏳ Așteptare' :
+                                       (${r.status.name() == 'APROBAT'} ? '✅ Aprobat' : '❌ Respins')">—</span>
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <form th:if="${r.status.name() == 'IN_ASTEPTARE'}"
+                              th:action="@{/retururi/status/{id}(id=${r.id})}" method="post"
+                              style="display:inline">
+                            <input type="hidden" name="status" value="APROBAT"/>
+                            <button type="submit" class="btn-sm btn-approve">✅ Aprobă</button>
+                        </form>
+                        <form th:if="${r.status.name() == 'IN_ASTEPTARE'}"
+                              th:action="@{/retururi/status/{id}(id=${r.id})}" method="post"
+                              style="display:inline">
+                            <input type="hidden" name="status" value="RESPINS"/>
+                            <button type="submit" class="btn-sm btn-reject">❌ Respinge</button>
+                        </form>
+                        <form th:action="@{/retururi/sterge/{id}(id=${r.id})}" method="post"
+                              style="display:inline"
+                              onsubmit="return confirm('Ștergi returul?')">
+                            <button type="submit" class="btn-sm btn-del">🗑</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div><!-- end main -->
+
+<!-- Modal Retur Nou -->
+<div class="overlay" id="modalAdauga">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">Retur Nou</div>
+                <div style="font-size:13px;color:#aaa;margin-top:2px">
+                    Selectează comanda sau completează manual
+                </div>
+            </div>
+            <button class="modal-close"
+                    onclick="document.getElementById('modalAdauga').classList.remove('open')">×</button>
+        </div>
+        <form th:action="@{/retururi/adauga}" method="post">
+
+            <div class="form-section">Identificare comandă</div>
+            <div class="form-group">
+                <label>Selectează comanda din sistem</label>
+                <select id="comenziSelect" onchange="incarcaComanda(this.value)"
+                        style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;outline:none;background:#fafafa">
+                    <option value="">— Alege comanda —</option>
+                    <option th:each="c : ${comenzi}"
+                            th:value="${c.id}"
+                            th:text="${c.numeClient + ' · ' + #numbers.formatDecimal(c.calculeazaTotal(),1,2) + ' RON · ' + #temporals.format(c.data,'dd.MM.yy')}">
+                    </option>
+                </select>
+                <div class="form-hint">Selectând comanda, datele se completează automat și sursa/codul promo se salvează pentru analiza ROAS</div>
+                <input type="hidden" name="comandaId" id="hiddenComandaId"/>
+            </div>
+
+            <div class="form-section">Date client</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nume Client *</label>
+                    <input type="text" name="numeClient" id="retNumeClient" required
+                           placeholder="ex: Ion Popescu"/>
+                </div>
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="tel" name="telefon" id="retTelefon"
+                           placeholder="07xx xxx xxx"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Nr. Comandă / Referință</label>
+                <input type="text" name="nrComanda" id="retNrComanda"
+                       placeholder="ex: CMD-001, AWB-12345"/>
+            </div>
+
+            <div class="form-section">Motiv retur</div>
+            <div class="form-group">
+                <label>Selectează motivul *</label>
+                <select name="motivRetur" required>
+                    <option value="" disabled selected>— Alege motivul —</option>
+                    <option th:each="m : ${motiveDisponibile}" th:value="${m}" th:text="${m}"></option>
+                </select>
+            </div>
+
+            <div class="form-section">Produse returnate</div>
+            <div id="returItems">
+                <div class="retur-item-row" style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px">
+                    <input type="text" name="idProdus" placeholder="Produs / SKU"
+                           style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>
+                    <input type="number" name="cantitateRetur" value="1" min="1"
+                           style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>
+                    <input type="number" name="pretUnitar" step="0.01" placeholder="Preț"
+                           style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>
+                    <button type="button" onclick="adaugaRandRetur()"
+                            style="width:34px;height:34px;background:#6c47ff;color:white;border:none;border-radius:8px;cursor:pointer;font-size:18px;flex-shrink:0">+</button>
+                </div>
+            </div>
+
+            <div class="form-section">Cost logistic retur</div>
+            <div class="form-group">
+                <label>Cost transport retur + manipulare (RON)</label>
+                <input type="number" name="costLogisticRetur" id="retCostLogistic" step="0.01" min="0" value="0"
+                       style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;outline:none;background:#fafafa"/>
+                <div class="form-hint">Costul transportului de retur si al manipularii coletului - se scade din venit la calculul ROAS real</div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel"
+                        onclick="document.getElementById('modalAdauga').classList.remove('open')">Anulează</button>
+                <button type="submit" class="btn-save">↩ Înregistrează Returul</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    /* Închide modal la click pe overlay */
+    document.getElementById('modalAdauga').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('open');
+    });
+
+    /* Încarcă datele comenzii selectate */
+    function incarcaComanda(id) {
+        if (!id) return;
+        fetch('/retururi/comanda-items/' + id)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                // Completează câmpurile client
+                if (data.numeClient) document.getElementById('retNumeClient').value = data.numeClient;
+                if (data.telefon)    document.getElementById('retTelefon').value    = data.telefon;
+                document.getElementById('retNrComanda').value = 'CMD-' + id;
+                document.getElementById('hiddenComandaId').value = id;
+
+                // Populează rândurile de produse
+                var container = document.getElementById('returItems');
+                container.innerHTML = '';
+                (data.items || []).forEach(function(item, idx) {
+                    var row = document.createElement('div');
+                    row.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px';
+                    row.innerHTML =
+                        '<input type="text" name="idProdus" value="' + (item.idProdus||'') + '"'
+                            + ' style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>'
+                        + '<input type="number" name="cantitateRetur" value="' + (item.cantitate||1) + '"'
+                            + ' min="1" style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>'
+                        + '<input type="number" name="pretUnitar" value="' + (item.pretUnitar||0) + '"'
+                            + ' step="0.01" style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>'
+                        + '<button type="button" onclick="stergeRand(this)"'
+                            + ' style="width:34px;height:34px;background:#fcebeb;color:#A32D2D;border:none;border-radius:8px;cursor:pointer;font-size:14px;flex-shrink:0">✕</button>';
+                    container.appendChild(row);
+                });
+
+                // Arată sursa detectată
+                if (data.sursa || data.codPromotional) {
+                    var info = document.createElement('div');
+                    info.style.cssText = 'background:#f0ebff;border-radius:8px;padding:8px 12px;font-size:12px;color:#6c47ff;margin-top:8px';
+                    info.innerHTML = '🔗 Sursă detectată din comandă: <strong>'
+                        + (data.sursa||'—') + '</strong>'
+                        + (data.codPromotional ? ' · Cod promo: <strong>' + data.codPromotional + '</strong>' : '')
+                        + ' — va fi salvată automat pentru analiza ROAS';
+                    container.appendChild(info);
+                }
+            })
+            .catch(function() {});
+    }
+
+    function adaugaRandRetur() {
+        var container = document.getElementById('returItems');
+        var row = document.createElement('div');
+        row.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px';
+        row.innerHTML =
+            '<input type="text" name="idProdus" placeholder="Produs / SKU"'
+                + ' style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>'
+            + '<input type="number" name="cantitateRetur" value="1" min="1"'
+                + ' style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>'
+            + '<input type="number" name="pretUnitar" step="0.01" placeholder="Preț"'
+                + ' style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>'
+            + '<button type="button" onclick="stergeRand(this)"'
+                + ' style="width:34px;height:34px;background:#fcebeb;color:#A32D2D;border:none;border-radius:8px;cursor:pointer;font-size:14px;flex-shrink:0">✕</button>';
+        container.appendChild(row);
+    }
+
+    function stergeRand(btn) {
+        btn.closest('div[style*="grid"]').remove();
+    }
+
+    function filtreazaRetururi() {
+        var q  = (document.getElementById('searchRetururi').value || '').toLowerCase();
+        var st = document.getElementById('fltStatusRetur').value;
+        document.querySelectorAll('table tbody tr').forEach(function(row) {
+            var mQ = !q  || (row.dataset.search || '').toLowerCase().includes(q);
+            var mS = !st || (row.dataset.status || '') === st;
+            row.style.display = (mQ && mS) ? '' : 'none';
+        });
+    }
+</script>
+</body>
+</html>

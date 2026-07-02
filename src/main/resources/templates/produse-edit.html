@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Editare Produs - SocialBiz</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f7; display: flex; min-height: 100vh; }
+        .sidebar { width: 220px; background: white; height: 100vh; position: fixed; display: flex; flex-direction: column; padding: 24px 16px; border-right: 1px solid #eee; }
+        .sidebar-brand h2 { color: #6c47ff; font-size: 16px; font-weight: 700; }
+        .sidebar-brand p { font-size: 12px; color: #aaa; margin-top: 2px; }
+        .sidebar nav { margin-top: 28px; flex: 1; overflow-y: auto; }
+        .sidebar nav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; text-decoration: none; color: #555; border-radius: 10px; margin-bottom: 4px; font-size: 14px; }
+        .sidebar nav a:hover { background: #f5f0ff; color: #6c47ff; }
+        .sidebar nav a.active { background: #f0ebff; color: #6c47ff; font-weight: 500; }
+        .sidebar-footer { background: #6c47ff; border-radius: 10px; padding: 12px; color: white; font-size: 12px; margin-top: auto; }
+        .main { margin-left: 220px; padding: 32px; flex: 1; }
+        .card { background: white; border-radius: 16px; border: 1px solid #eee; padding: 32px; max-width: 620px; }
+        .card-header { margin-bottom: 28px; }
+        .card-header h1 { font-size: 22px; font-weight: 600; }
+        .card-header p { color: #888; font-size: 14px; margin-top: 4px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 10px; font-size: 14px; outline: none; background: #fafafa; }
+        .form-group input:focus, .form-group select:focus { border-color: #6c47ff; background: white; }
+        .form-group input.input-readonly { background: #f0f0f0; color: #888; cursor: not-allowed; border-color: #e0e0e0; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+        .form-actions { display: flex; gap: 10px; margin-top: 28px; }
+        .btn-cancel { padding: 10px 20px; border: 1px solid #e5e5e5; border-radius: 10px; background: white; font-size: 14px; cursor: pointer; color: #555; text-decoration: none; display: inline-flex; align-items: center; }
+        .btn-save { padding: 10px 24px; background: #6c47ff; color: white; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; font-weight: 500; }
+        /* Flash mesaje */
+        .flash-error-sku { background: #fce8e8; border: 1px solid #f5c6cb; color: #A32D2D; border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; font-size: 14px; }
+        .flash-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; font-size: 14px; }
+        /* Info box stoc read-only */
+        .info-stoc { background: #f0f7ff; border: 1px solid #b8d4ef; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #185FA5; display: flex; align-items: center; gap: 8px; }
+        .info-stoc strong { font-weight: 600; }
+        .readonly-label { font-size: 11px; color: #aaa; margin-top: 4px; font-style: italic; }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz Assistant</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}" class="active">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit"
+                    style="width:100%;padding:10px 12px;background:none;border:none;
+                   text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;
+                   border-radius:10px;display:flex;align-items:center;gap:10px">
+                ← Deconectează-te
+            </button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Dezvoltat pentru antreprenori</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+    <div class="card">
+        <div class="card-header">
+            <h1>Editare Produs</h1>
+            <p>Modifică informațiile produsului</p>
+        </div>
+
+        <!-- Flash error SKU duplicat -->
+        <div th:if="${errorSku}" class="flash-error-sku">
+            ⚠️ <span th:text="${errorSku}"></span>
+        </div>
+        <!-- Flash success -->
+        <div th:if="${successProdus}" class="flash-success">
+            ✅ <span th:text="${successProdus}"></span>
+        </div>
+
+        <form th:action="@{/produse/edit/{id}(id=${produs.id})}" method="post">
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nume Produs *</label>
+                    <input type="text" name="nume" th:value="${produs.nume}" required/>
+                </div>
+                <div class="form-group">
+                    <label>Cod SKU *</label>
+                    <input type="text" name="codSKU" th:value="${produs.codSKU}" required/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Descriere</label>
+                <textarea name="descriere" rows="2" th:text="${produs.descriere}"></textarea>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Categorie *</label>
+                    <select name="categorie" required>
+                        <option th:each="cat : ${categorii}"
+                                th:value="${cat}"
+                                th:text="${cat.label}"
+                                th:selected="${cat == produs.categorie}">
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <!-- C2: Furnizorul se seteaza automat din receptii, nu e editabil -->
+                    <label>Furnizor</label>
+                    <input type="text" class="input-readonly"
+                           th:value="${produs.furnizor != null ? produs.furnizor.nume : '— Fără furnizor —'}"
+                           readonly title="Furnizorul se actualizeaza automat la receptie"/>
+                    <div class="readonly-label">Se actualizează automat la recepție marfă</div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Preț vânzare (RON) *</label>
+                    <input type="number" name="pret" step="0.01"
+                           th:value="${produs.pret}" required/>
+                </div>
+                <div class="form-group">
+                    <label>Stoc Minim (alertă)</label>
+                    <input type="number" name="stocMinim"
+                           th:value="${produs.stocMinim}"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Unitate de Măsură *</label>
+                <select name="unitateMasura" required>
+                    <option th:each="um : ${unitatiMasura}"
+                            th:value="${um}"
+                            th:text="${um.label}"
+                            th:selected="${um == produs.unitateMasura}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- C2: Stocul curent — afisare read-only, nu input editabil -->
+            <div class="info-stoc">
+                📦 Stoc curent:
+                <strong th:text="${produs.stoc != null ? produs.stoc + ' buc' : '0 buc'}">0 buc</strong>
+                &nbsp;—&nbsp; stocul se modifică exclusiv prin
+                <a th:href="@{/furnizori}" style="color:#185FA5">recepții de marfă</a>.
+            </div>
+
+            <div class="form-actions">
+                <a th:href="@{/produse}" class="btn-cancel">← Anulează</a>
+                <button type="submit" class="btn-save">Salvează Modificările</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

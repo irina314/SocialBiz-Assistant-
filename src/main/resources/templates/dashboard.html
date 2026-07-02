@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Dashboard — SocialBiz</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f7;display:flex;min-height:100vh;color:#1a1a1a}
+        /* Sidebar */
+        .sidebar{width:220px;background:white;height:100vh;position:fixed;display:flex;flex-direction:column;padding:24px 16px;border-right:1px solid #eee;z-index:10}
+        .sidebar-brand h2{color:#6c47ff;font-size:16px;font-weight:700}
+        .sidebar-brand p{font-size:12px;color:#aaa;margin-top:2px}
+        .sidebar nav{margin-top:28px;flex:1;overflow-y:auto}
+        .sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;text-decoration:none;color:#555;border-radius:10px;margin-bottom:4px;font-size:14px;transition:all .12s}
+        .sidebar nav a:hover{background:#f5f0ff;color:#6c47ff}
+        .sidebar nav a.active{background:#f0ebff;color:#6c47ff;font-weight:600}
+        .sidebar-footer{background:#6c47ff;border-radius:10px;padding:12px;color:white;font-size:12px;margin-top:16px}
+        /* Main */
+        .main{margin-left:220px;padding:32px;flex:1;max-width:calc(100vw - 220px)}
+        /* Salut + stare */
+        .top-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;gap:20px}
+        .salut h1{font-size:26px;font-weight:700;color:#1a1a1a;margin-bottom:4px}
+        .salut p{font-size:14px;color:#888}
+        .stare-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:30px;font-size:14px;font-weight:600;white-space:nowrap}
+        .stare-bine{background:#eaf8f2;color:#155724;border:1.5px solid #1D9E75}
+        .stare-atentie{background:#fff8e6;color:#854F0B;border:1.5px solid #f5c842}
+        .stare-redus{background:#f5f5f7;color:#888;border:1.5px solid #ddd}
+        /* Alerte */
+        .alerte-section{margin-bottom:24px}
+        .alerta{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:12px;margin-bottom:10px;border:1px solid}
+        .alerta:last-child{margin-bottom:0}
+        .alerta.urgent{background:#fff3f3;border-color:#ffcdd2}
+        .alerta.atentie{background:#fff8e6;border-color:#ffe082}
+        .alerta.info{background:#e8f4fd;border-color:#90caf9}
+        .alerta-icon{font-size:22px;flex-shrink:0}
+        .alerta-text{flex:1}
+        .alerta-titlu{font-size:14px;font-weight:500;color:#1a1a1a}
+        .alerta-link{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0}
+        .alerta.urgent .alerta-link{background:#E24B4A;color:white}
+        .alerta.atentie .alerta-link{background:#f5a623;color:white}
+        .alerta.info .alerta-link{background:#378ADD;color:white}
+        .no-alerte{display:flex;align-items:center;gap:12px;padding:14px 18px;background:#eaf8f2;border-radius:12px;border:1px solid #b2dfdb;font-size:14px;color:#155724;font-weight:500}
+        /* Cifre principale — 3 mari */
+        .cifre-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+        .cifra-card{background:white;border-radius:12px;padding:16px 18px;border:1px solid #eee;position:relative;overflow:hidden}
+        .cifra-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:14px 0 0 14px}
+        .cifra-card.violet::before{background:#6c47ff}
+        .cifra-card.verde::before{background:#1D9E75}
+        .cifra-card.portocaliu::before{background:#f5a623}
+        .cifra-label{font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+        .cifra-value{font-size:24px;font-weight:800;line-height:1;margin-bottom:4px}
+        .cifra-card.violet .cifra-value{color:#6c47ff}
+        .cifra-card.verde  .cifra-value{color:#1D9E75}
+        .cifra-card.portocaliu .cifra-value{color:#f5a623}
+        .cifra-sub{font-size:12px;color:#aaa}
+        .cifra-link{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:12px;color:#6c47ff;text-decoration:none;font-weight:500}
+        .cifra-link:hover{text-decoration:underline}
+        /* Layout jos */
+        .bottom-row{display:grid;grid-template-columns:1.8fr 1fr;gap:18px}
+        .card{background:white;border-radius:14px;border:1px solid #eee;overflow:hidden}
+        .card-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #f5f5f5}
+        .card-title{font-size:14px;font-weight:600}
+        .card-link{font-size:12px;color:#6c47ff;text-decoration:none;font-weight:500}
+        .card-link:hover{text-decoration:underline}
+        /* Grafic bare */
+        .bar-chart{display:flex;align-items:flex-end;gap:8px;height:130px;padding:16px 20px 0}
+        .bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;height:100%}
+        .bar-col{display:flex;align-items:flex-end;flex:1;width:100%}
+        .bar{width:100%;background:linear-gradient(180deg,#9b7fff,#6c47ff);border-radius:6px 6px 0 0;min-height:3px;transition:height .3s}
+        .bar:hover{background:linear-gradient(180deg,#b49fff,#9b7fff)}
+        .bar-label{font-size:10px;color:#bbb;text-align:center;padding:6px 0 12px}
+        .bar-val{font-size:10px;color:#6c47ff;font-weight:600;text-align:center;min-height:14px}
+        /* Comenzi recente */
+        .comanda-row{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #f5f5f5}
+        .comanda-row:last-child{border-bottom:none}
+        .comanda-client{font-size:13px;font-weight:500}
+        .comanda-meta{font-size:11px;color:#aaa;margin-top:2px}
+        .comanda-total{font-size:14px;font-weight:700;color:#6c47ff}
+        .badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+        .badge-nou{background:#e8f4fd;color:#0c5c8a}
+        .badge-proc{background:#fff3cd;color:#856404}
+        .badge-fin{background:#d4edda;color:#155724}
+        .badge-an{background:#fce8e8;color:#A32D2D}
+        /* Actiuni rapide */
+        .actiuni{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .actiune{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #eee;border-radius:10px;text-decoration:none;color:#444;font-size:13px;font-weight:500;transition:all .12s;background:white}
+        .actiune:hover{border-color:#6c47ff;background:#f5f0ff;color:#6c47ff}
+        .actiune-icon{font-size:18px;flex-shrink:0}
+        /* Empty */
+        .empty-row{padding:32px 20px;text-align:center;color:#bbb;font-size:13px}
+        /* Mini-tabel datorii furnizori — culori data scadenta */
+        .data-scad-rosie     { color: #A32D2D; font-weight: 700; font-size: 11px; }
+        .data-scad-portocalie{ color: #f5a623; font-weight: 600; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz</h2>
+        <p th:text="${numeUtilizator}">—</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}" class="active">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit" style="width:100%;padding:10px 12px;background:none;border:none;text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:10px">← Deconectează-te</button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Dezvoltat pentru antreprenori</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- Salut + stare generală -->
+    <div class="top-row">
+        <div class="salut">
+            <h1 th:text="${salut} + ', ' + ${numeUtilizator} + '!'">Bună ziua!</h1>
+            <p>Iată ce se întâmplă cu afacerea ta astăzi</p>
+        </div>
+        <div class="stare-pill"
+             th:classappend="${stareClasa == 'bine'} ? ' stare-bine' :
+                             (${stareClasa == 'atentie'} ? ' stare-atentie' : ' stare-redus')">
+            <span th:text="${stareClasa == 'bine'} ? '✅' :
+                           (${stareClasa == 'atentie'} ? '⚠️' : '💤')">✅</span>
+            <span th:text="${stareGenerala}">—</span>
+        </div>
+    </div>
+
+    <!-- Alerte acționabile -->
+    <div class="alerte-section">
+        <div class="no-alerte" th:if="${#lists.isEmpty(alerte)}">
+            ✅ Nicio alertă — totul e în regulă. Poți adăuga comenzi noi sau verifica rapoartele.
+        </div>
+        <div th:each="a : ${alerte}" class="alerta"
+             th:classappend="${a.tip}">
+            <div class="alerta-icon" th:text="${a.icon}">🔔</div>
+            <div class="alerta-text">
+                <div class="alerta-titlu" th:text="${a.titlu}">—</div>
+            </div>
+            <a th:href="${a.link}" class="alerta-link" th:text="${a.actiune}">→</a>
+        </div>
+    </div>
+
+    <!-- 3 cifre principale -->
+    <div class="cifre-row">
+        <div class="cifra-card violet">
+            <div class="cifra-label">De încasat acum</div>
+            <div class="cifra-value" th:text="${deIncasat} + ' RON'">0 RON</div>
+            <div class="cifra-sub"
+                 th:text="${comenziNoi + inProcesare} + ' comenzi active'">0 comenzi</div>
+            <a th:href="@{/comenzi}" class="cifra-link">Procesează comenzile →</a>
+        </div>
+        <div class="cifra-card verde">
+            <div class="cifra-label">Venit luna aceasta</div>
+            <div class="cifra-value" th:text="${venitLuna} + ' RON'">0 RON</div>
+            <div class="cifra-sub" th:text="${comenziLuna} + ' comenzi finalizate'">0 comenzi</div>
+            <a th:href="@{/analiza-marketing}" class="cifra-link">Vezi detalii marketing →</a>
+        </div>
+        <div class="cifra-card portocaliu">
+            <div class="cifra-label">Comenzi noi</div>
+            <div class="cifra-value" th:text="${comenziNoi}">0</div>
+            <div class="cifra-sub" th:text="${inProcesare} + ' în procesare'">0 în procesare</div>
+            <a th:href="@{/smart-input}" class="cifra-link">Adaugă comandă nouă →</a>
+        </div>
+        <div class="cifra-card" style="border-left:4px solid #E24B4A">
+            <div class="cifra-label">Datorii Furnizori</div>
+            <div class="cifra-value" style="color:#E24B4A;font-size:24px"
+                 th:text="${totalDatorii} + ' RON'">0 RON</div>
+            <div style="margin-top:6px;display:flex;flex-direction:column;gap:3px">
+                <div class="cifra-sub" th:if="${nrFacturiScadente > 0}"
+                     style="color:#A32D2D;font-weight:600"
+                     th:text="'⏰ ' + ${nrFacturiScadente} + ' facturi scadente'">—</div>
+                <div class="cifra-sub" th:if="${nrScadente3zile > 0}"
+                     style="color:#E24B4A;font-weight:600"
+                     th:text="'🔴 ' + ${nrScadente3zile} + ' facturi scad in 3 zile'">—</div>
+                <div class="cifra-sub" th:if="${nrScadente7zile > nrScadente3zile}"
+                     style="color:#f5a623;font-weight:500"
+                     th:text="'🟡 ' + ${nrScadente7zile - nrScadente3zile} + ' facturi scad in 7 zile'">—</div>
+                <div class="cifra-sub" th:if="${nrAvizeFaraFactura > 0}"
+                     style="color:#f5a623;font-weight:500"
+                     th:text="'🧾 ' + ${nrAvizeFaraFactura} + ' avize fara factura'">—</div>
+                <div class="cifra-sub" th:if="${nrFacturiScadente == 0 and nrScadente7zile == 0 and nrAvizeFaraFactura == 0}">
+                    ✅ Nicio problema la furnizori
+                </div>
+            </div>
+
+            <!-- Mini-tabel facturi care scad curand -->
+            <div th:if="${not #lists.isEmpty(scadente7zile)}"
+                 style="margin-top:10px;border-top:1px solid #f0f0f0;padding-top:8px">
+                <div style="font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
+                    Scadente apropiate
+                </div>
+                <div th:each="f : ${scadente7zile}"
+                     style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #fafafa;font-size:12px">
+                    <div>
+                        <span style="font-weight:500" th:text="${f.furnizor?.nume ?: 'Furnizor'}">—</span>
+                        <span style="color:#aaa;margin-left:4px" th:text="${f.numarFactura ?: ''}">—</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <span th:text="${#numbers.formatDecimal(f.rest,1,2) + ' RON'}"
+                              style="font-weight:600;color:#E24B4A">—</span>
+                        <span th:text="${#temporals.format(f.dataScadenta,'dd MMM')}"
+                              th:class="${f.esteScadenta()} ? 'data-scad-rosie' : 'data-scad-portocalie'"
+                              style="font-size:11px;font-weight:600">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <a th:href="@{/furnizori}" class="cifra-link" style="color:#E24B4A">Vezi furnizori →</a>
+        </div>
+    </div>
+
+    <!-- Grafic + Comenzi recente -->
+    <div class="bottom-row">
+
+        <!-- Grafic 7 zile -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title">Venit — ultimele 7 zile</div>
+                <a th:href="@{/analiza-marketing}" class="card-link">Analiză completă →</a>
+            </div>
+            <div class="bar-chart" id="barChart"></div>
+            <div class="card-head" style="border-top:1px solid #f5f5f5;border-bottom:none;margin-top:4px">
+                <div class="card-title" style="font-size:13px">Comenzi recente</div>
+                <a th:href="@{/comenzi}" class="card-link">Toate →</a>
+            </div>
+            <div th:if="${#lists.isEmpty(recente)}" class="empty-row">
+                Nicio comandă înregistrată încă
+            </div>
+            <div th:each="c : ${recente}" class="comanda-row">
+                <div>
+                    <div class="comanda-client" th:text="${c.numeClient}">—</div>
+                    <div class="comanda-meta"
+                         th:text="${#temporals.format(c.data,'dd MMM · HH:mm')}">—</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <span th:switch="${c.status}">
+                        <span th:case="'NOU'"          class="badge badge-nou">Nou</span>
+                        <span th:case="'IN_PROCESARE'" class="badge badge-proc">Procesare</span>
+                        <span th:case="'FINALIZAT'"    class="badge badge-fin">Finalizat</span>
+                        <span th:case="'ANULAT'"       class="badge badge-an">Anulat</span>
+                    </span>
+                    <span class="comanda-total"
+                          th:text="${#numbers.formatDecimal(c.calculeazaTotal(),1,2)} + ' RON'">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acțiuni rapide -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title">Acțiuni rapide</div>
+            </div>
+            <div class="actiuni">
+                <a th:href="@{/smart-input}" class="actiune">
+                    <span class="actiune-icon">✨</span>Comandă nouă
+                </a>
+                <a th:href="@{/comenzi}" class="actiune">
+                    <span class="actiune-icon">📦</span>Comenzi
+                </a>
+                <a th:href="@{/export-curier}" class="actiune">
+                    <span class="actiune-icon">🚚</span>Export Curier
+                </a>
+                <a th:href="@{/produse}" class="actiune">
+                    <span class="actiune-icon">🗃</span>Produse
+                </a>
+                <a th:href="@{/clienti?view=rfm}" class="actiune">
+                    <span class="actiune-icon">👥</span>Clienți RFM
+                </a>
+                <a th:href="@{/influenceri}" class="actiune">
+                    <span class="actiune-icon">🌟</span>Influenceri
+                </a>
+                <a th:href="@{/retururi}" class="actiune">
+                    <span class="actiune-icon">↩</span>Retururi
+                </a>
+                <a th:href="@{/analiza-marketing}" class="actiune">
+                    <span class="actiune-icon">📈</span>Marketing
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Date grafic -->
+<div id="chartData" style="display:none"
+     th:data-labels="${#strings.listJoin(zile7Label,',')}"
+     th:data-valori="${#strings.listJoin(zile7Valori,',')}">
+</div>
+
+<script>
+    (function() {
+        var el     = document.getElementById('chartData');
+        var labels = el.dataset.labels ? el.dataset.labels.split(',') : [];
+        var valori = el.dataset.valori ? el.dataset.valori.split(',').map(Number) : [];
+        var maxVal = Math.max.apply(null, valori.concat([1]));
+        var container = document.getElementById('barChart');
+
+        labels.forEach(function(label, i) {
+            var val  = valori[i] || 0;
+            var pct  = maxVal > 0 ? Math.round(val / maxVal * 100) : 0;
+            var wrap = document.createElement('div');
+            wrap.className = 'bar-wrap';
+            wrap.title = label + ': ' + val + ' RON';
+
+            var valDiv = document.createElement('div');
+            valDiv.className   = 'bar-val';
+            valDiv.textContent = val > 0 ? val.toFixed(0) : '';
+
+            var colDiv = document.createElement('div');
+            colDiv.className = 'bar-col';
+            var bar = document.createElement('div');
+            bar.className    = 'bar';
+            bar.style.height = Math.max(pct, val > 0 ? 8 : 0) + '%';
+            colDiv.appendChild(bar);
+
+            var lblDiv = document.createElement('div');
+            lblDiv.className   = 'bar-label';
+            lblDiv.textContent = label;
+
+            wrap.appendChild(valDiv);
+            wrap.appendChild(colDiv);
+            wrap.appendChild(lblDiv);
+            container.appendChild(wrap);
+        });
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Profil Firmă — SocialBiz</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f7;display:flex;min-height:100vh;color:#1a1a1a}
+        .sidebar{width:220px;background:white;height:100vh;position:fixed;display:flex;flex-direction:column;padding:24px 16px;border-right:1px solid #eee;z-index:10}
+        .sidebar-brand h2{color:#6c47ff;font-size:16px;font-weight:700}
+        .sidebar-brand p{font-size:12px;color:#aaa;margin-top:2px}
+        .sidebar nav{margin-top:28px;flex:1;overflow-y:auto}
+        .sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;text-decoration:none;color:#555;border-radius:10px;margin-bottom:4px;font-size:14px;transition:all .12s}
+        .sidebar nav a:hover{background:#f5f0ff;color:#6c47ff}
+        .sidebar nav a.active{background:#f0ebff;color:#6c47ff;font-weight:600}
+        .sidebar-footer{background:#6c47ff;border-radius:10px;padding:12px;color:white;font-size:12px;margin-top:16px}
+        .main{margin-left:220px;padding:32px;flex:1;max-width:calc(100vw - 220px)}
+        .page-header{margin-bottom:28px}
+        .page-header h1{font-size:24px;font-weight:700;color:#1a1a1a}
+        .page-header p{font-size:14px;color:#888;margin-top:4px}
+        .card{background:white;border-radius:14px;border:1px solid #eee;padding:28px;margin-bottom:20px}
+        .card-title{font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:4px}
+        .card-subtitle{font-size:13px;color:#888;margin-bottom:20px}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .form-group{display:flex;flex-direction:column;gap:5px}
+        .form-group label{font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.4px}
+        .form-group input{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;color:#1a1a1a;background:#fafafa;transition:border .15s;font-family:inherit}
+        .form-group input:focus{outline:none;border-color:#6c47ff;background:white}
+        .form-group .hint{font-size:11px;color:#aaa}
+        .btn-primary{padding:11px 24px;background:#6c47ff;color:white;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;font-family:inherit}
+        .btn-primary:hover{background:#5535dd}
+        .alert-succes{background:#eaf8f2;color:#155724;border:1px solid #1D9E75;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:14px;font-weight:500}
+        .alert-atentie{background:#fff8e6;color:#7a4f00;border:1px solid #f5c842;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:14px}
+        .preview-box{background:#f5f7fa;border:1px dashed #c5d0de;border-radius:10px;padding:16px;font-size:13px;color:#555;line-height:1.7}
+        .preview-box strong{color:#185FA5}
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz Assistant</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}" class="active">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit"
+                    style="width:100%;padding:10px 12px;background:none;border:none;
+                           text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;
+                           border-radius:10px;display:flex;align-items:center;gap:10px">
+                ← Deconectează-te
+            </button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Dezvoltat pentru antreprenori</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+    <div class="page-header">
+        <h1>⚙️ Profil Firmă</h1>
+        <p>Completează datele firmei tale — sunt folosite la generarea avizelor și facturilor proformă.</p>
+    </div>
+
+    <div th:if="${succes}" class="alert-succes" th:text="${succes}"></div>
+
+    <div th:if="${utilizator.numeFirma == null or #strings.isEmpty(utilizator.numeFirma)}"
+         class="alert-atentie">
+        ⚠️ <strong>Datele firmei nu sunt completate.</strong>
+        Fără acestea, documentele PDF generate vor afișa informații incomplete.
+    </div>
+
+    <form th:action="@{/profil/salveaza-firma}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+        <!-- Identitate -->
+        <div class="card">
+            <div class="card-title">🏢 Identitate firmă</div>
+            <div class="card-subtitle">Aceste date apar în antetul tuturor documentelor generate.</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nume firmă *</label>
+                    <input type="text" name="numeFirma" th:value="${utilizator.numeFirma}"
+                           placeholder="ex: SC MODA CHIC SRL"/>
+                </div>
+                <div class="form-group">
+                    <label>CUI</label>
+                    <input type="text" name="cui" th:value="${utilizator.cui}"
+                           placeholder="ex: RO12345678"/>
+                </div>
+                <div class="form-group">
+                    <label>Nr. Registru Comerțului</label>
+                    <input type="text" name="nrRegCom" th:value="${utilizator.nrRegCom}"
+                           placeholder="ex: J40/1234/2020"/>
+                </div>
+                <div class="form-group">
+                    <label>Adresă firmă</label>
+                    <input type="text" name="adresaFirma" th:value="${utilizator.adresaFirma}"
+                           placeholder="ex: Str. Florilor 5, Iași"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact -->
+        <div class="card">
+            <div class="card-title">📞 Date de contact</div>
+            <div class="card-subtitle">Afișate în secțiunea Expeditor / Furnizor din documente.</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Telefon firmă</label>
+                    <input type="text" name="telefonFirma" th:value="${utilizator.telefonFirma}"
+                           placeholder="ex: 0712 345 678"/>
+                </div>
+                <div class="form-group">
+                    <label>Email firmă</label>
+                    <input type="email" name="emailFirma" th:value="${utilizator.emailFirma}"
+                           placeholder="ex: contact@modachic.ro"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date bancare -->
+        <div class="card">
+            <div class="card-title">🏦 Date bancare</div>
+            <div class="card-subtitle">Folosite în factura proformă pentru instrucțiunile de plată.</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Bancă</label>
+                    <input type="text" name="banca" th:value="${utilizator.banca}"
+                           placeholder="ex: ING Bank"/>
+                </div>
+                <div class="form-group">
+                    <label>IBAN</label>
+                    <input type="text" name="iban" th:value="${utilizator.iban}"
+                           placeholder="ex: RO49AAAA1B31007593840000"/>
+                    <span class="hint">Verifică că IBAN-ul este corect înainte de salvare.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Adresa pentru curier (AWB) -->
+        <div class="card">
+            <div class="card-title">🚚 Adresă pentru curier (generare automată AWB)</div>
+            <div class="card-subtitle">
+                Folosită ca adresă de expediție la exportul comenzilor pentru curier (Export Curier).
+                Completează-o pe câmpuri separate — exact așa cer firmele de curierat — ca AWB-urile
+                să se genereze automat, fără să mai editezi nimic manual la export.
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Persoană de contact</label>
+                    <input type="text" name="persoanaContactFirma" th:value="${utilizator.persoanaContactFirma}"
+                           placeholder="ex: Andreea Constantin"/>
+                    <span class="hint">Persoana reală pe care curierul o poate întreba la ridicarea coletului.</span>
+                </div>
+                <div class="form-group">
+                    <label>Județ</label>
+                    <input type="text" name="judetFirma" th:value="${utilizator.judetFirma}"
+                           placeholder="ex: Iași"/>
+                </div>
+                <div class="form-group">
+                    <label>Localitate</label>
+                    <input type="text" name="localitateFirma" th:value="${utilizator.localitateFirma}"
+                           placeholder="ex: Iași"/>
+                </div>
+                <div class="form-group">
+                    <label>Cod poștal</label>
+                    <input type="text" name="codPostalFirma" th:value="${utilizator.codPostalFirma}"
+                           placeholder="ex: 700123"/>
+                </div>
+                <div class="form-group">
+                    <label>Stradă</label>
+                    <input type="text" name="stradaFirma" th:value="${utilizator.stradaFirma}"
+                           placeholder="ex: Str. Tineretului"/>
+                </div>
+                <div class="form-group">
+                    <label>Număr</label>
+                    <input type="text" name="numarFirma" th:value="${utilizator.numarFirma}"
+                           placeholder="ex: 56"/>
+                </div>
+                <div class="form-group">
+                    <label>Bloc</label>
+                    <input type="text" name="blocFirma" th:value="${utilizator.blocFirma}"
+                           placeholder="opțional"/>
+                </div>
+                <div class="form-group">
+                    <label>Scară</label>
+                    <input type="text" name="scaraFirma" th:value="${utilizator.scaraFirma}"
+                           placeholder="opțional"/>
+                </div>
+                <div class="form-group">
+                    <label>Etaj</label>
+                    <input type="text" name="etajFirma" th:value="${utilizator.etajFirma}"
+                           placeholder="opțional"/>
+                </div>
+                <div class="form-group">
+                    <label>Apartament</label>
+                    <input type="text" name="apartamentFirma" th:value="${utilizator.apartamentFirma}"
+                           placeholder="opțional"/>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary">💾 Salvează datele firmei</button>
+    </form>
+
+    <!-- Preview -->
+    <div class="card" style="margin-top:20px">
+        <div class="card-title">👁️ Previzualizare antet document</div>
+        <div class="card-subtitle">Așa va arăta antetul în PDF-urile generate.</div>
+        <div class="preview-box">
+            <strong th:text="${utilizator.numeFirma != null and !#strings.isEmpty(utilizator.numeFirma)
+                               ? utilizator.numeFirma : '(Nume firmă necompletat)'}">Firma</strong><br/>
+            <span th:if="${utilizator.cui != null and !#strings.isEmpty(utilizator.cui)}"
+                  th:text="'CUI: ' + ${utilizator.cui}"></span>
+            <span th:if="${utilizator.nrRegCom != null and !#strings.isEmpty(utilizator.nrRegCom)}"
+                  th:text="'  |  Reg.Com: ' + ${utilizator.nrRegCom}"></span><br/>
+            <span th:if="${utilizator.adresaFirma != null and !#strings.isEmpty(utilizator.adresaFirma)}"
+                  th:text="${utilizator.adresaFirma}"></span><br/>
+            <span th:if="${utilizator.telefonFirma != null and !#strings.isEmpty(utilizator.telefonFirma)}"
+                  th:text="${utilizator.telefonFirma}"></span>
+            <span th:if="${utilizator.emailFirma != null and !#strings.isEmpty(utilizator.emailFirma)}"
+                  th:text="'  |  ' + ${utilizator.emailFirma}"></span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

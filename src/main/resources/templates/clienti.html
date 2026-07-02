@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Clienți — SocialBiz</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f7;display:flex;min-height:100vh}
+
+        /* Sidebar */
+        .sidebar{width:220px;background:white;height:100vh;position:fixed;display:flex;flex-direction:column;padding:24px 16px;border-right:1px solid #eee;z-index:10}
+        .sidebar-brand h2{color:#6c47ff;font-size:16px;font-weight:700}
+        .sidebar-brand p{font-size:12px;color:#aaa;margin-top:2px}
+        .sidebar nav{margin-top:28px;flex:1;overflow-y:auto}
+        .sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;text-decoration:none;color:#555;border-radius:10px;margin-bottom:4px;font-size:14px}
+        .sidebar nav a:hover{background:#f5f0ff;color:#6c47ff}
+        .sidebar nav a.active{background:#f0ebff;color:#6c47ff;font-weight:500}
+        .sidebar-footer{background:#6c47ff;border-radius:10px;padding:12px;color:white;font-size:12px;margin-top:16px}
+
+        /* Main */
+        .main{margin-left:220px;padding:32px;flex:1;max-width:calc(100vw - 220px)}
+        .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+        .page-header h1{font-size:24px;font-weight:600;color:#1a1a1a}
+        .page-header p{color:#888;font-size:14px;margin-top:4px}
+
+        /* View toggle */
+        .view-toggle{display:flex;gap:6px;background:white;border:1px solid #eee;border-radius:10px;padding:4px}
+        .vt-btn{padding:7px 16px;border-radius:7px;border:none;background:none;font-size:13px;cursor:pointer;color:#555;font-weight:500;text-decoration:none;display:inline-block}
+        .vt-btn.active{background:#6c47ff;color:white}
+
+        /* KPI Row */
+        .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+        .kpi{background:white;border-radius:12px;padding:16px 18px;border:1px solid #eee}
+        .kpi-label{font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+        .kpi-value{font-size:22px;font-weight:700;line-height:1;margin-bottom:4px}
+        .kpi-sub{font-size:11px;color:#aaa}
+
+        /* Toolbar */
+        .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+        .search-box{flex:1;position:relative}
+        .search-box input{width:100%;padding:9px 14px 9px 36px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:white;outline:none}
+        .search-box input:focus{border-color:#6c47ff}
+        .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px}
+
+        /* Table card */
+        .table-card{background:white;border-radius:14px;border:1px solid #eee;overflow:hidden}
+        table{width:100%;border-collapse:collapse}
+        thead th{padding:11px 14px;text-align:left;font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px;background:#fafafa;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+        tbody td{padding:13px 14px;font-size:13px;color:#333;border-bottom:1px solid #f7f7f7;vertical-align:middle}
+        tbody tr:last-child td{border-bottom:none}
+        tbody tr:hover td{background:#fafafa}
+
+        /* Badges */
+        .badge-activ{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:#eaf3de;color:#3B6D11;display:inline-block}
+        .badge-inactiv{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:#faeeda;color:#854F0B;display:inline-block}
+        .seg-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+
+        /* ── RFM VIEW ── */
+        /* Segment cards row */
+        .segmente-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+        .seg-card{background:white;border-radius:12px;padding:16px;border:2px solid #eee;cursor:pointer;transition:all .15s;text-align:center;position:relative}
+        .seg-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+        .seg-card.active-seg{box-shadow:0 0 0 2px var(--sc);border-color:var(--sc)}
+        .seg-icon{font-size:26px;margin-bottom:6px}
+        .seg-name{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
+        .seg-count{font-size:22px;font-weight:700}
+        .seg-desc{font-size:10px;color:#aaa;margin-top:4px;line-height:1.3}
+
+        /* RFM info banner — compact */
+        .rfm-banner{background:#f5f0ff;border:1px solid #e0d8ff;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:18px}
+        .rfm-banner-title{font-size:13px;font-weight:600;color:#6c47ff;white-space:nowrap}
+        .rfm-dims{display:flex;gap:20px;flex-wrap:wrap}
+        .rfm-dim{display:flex;align-items:center;gap:8px}
+        .rfm-dim-badge{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0}
+        .rfm-dim-text{font-size:12px;color:#555}
+
+        /* RFM table — simplified */
+        .rfm-score-cell{display:flex;align-items:center;gap:4px}
+        .pip{width:8px;height:8px;border-radius:50%;background:#e5e5e5}
+        .pip.on{background:#6c47ff}
+        .score-label{font-size:11px;color:#aaa;margin-left:2px}
+
+        /* Action hint */
+        .action-tag{font-size:11px;font-weight:500;padding:3px 9px;border-radius:6px;display:inline-block}
+
+        /* Empty */
+        .empty{text-align:center;padding:60px 20px;color:#aaa}
+
+        /* RFM toolbar */
+        .rfm-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+        .seg-filter-btn{padding:6px 13px;border:1px solid #e5e5e5;border-radius:20px;background:white;font-size:12px;cursor:pointer;color:#555;white-space:nowrap;font-weight:500}
+        .seg-filter-btn.active{color:white;border-color:transparent}
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}" class="active">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit" style="width:100%;padding:10px 12px;background:none;border:none;text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:10px">← Deconectează-te</button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Platforma ta de vânzări</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h1>👥 Clienți</h1>
+            <p>Gestionează clienții și analizează comportamentul de cumpărare</p>
+        </div>
+        <div class="view-toggle">
+            <a th:href="@{/clienti(view='lista',perioada=${perioada})}"
+               class="vt-btn" th:classappend="${view == 'lista'} ? ' active' : ''">📋 Listă</a>
+            <a th:href="@{/clienti(view='rfm',perioada=${perioada})}"
+               class="vt-btn" th:classappend="${view == 'rfm'} ? ' active' : ''">📊 Analiză RFM</a>
+        </div>
+    </div>
+
+    <!-- KPI row — shared between views -->
+    <div class="kpi-row">
+        <div class="kpi" style="border-left:4px solid #6c47ff">
+            <div class="kpi-label">Total Clienți</div>
+            <div class="kpi-value" style="color:#6c47ff" th:text="${totalClienti}">0</div>
+            <div class="kpi-sub">înregistrați în platformă</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #f5a623">
+            <div class="kpi-label">Inactivi</div>
+            <div class="kpi-value" style="color:#f5a623" th:text="${nrInactivi}">0</div>
+            <div class="kpi-sub">fără comenzi recente</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #1D9E75">
+            <div class="kpi-label">Total Încasat</div>
+            <div class="kpi-value" style="color:#1D9E75;font-size:18px" th:text="${totalIncasat} + ' RON'">0</div>
+            <div class="kpi-sub">comenzi finalizate</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #E24B4A">
+            <div class="kpi-label">De Încasat</div>
+            <div class="kpi-value" style="color:#E24B4A;font-size:18px" th:text="${totalDeIncasat} + ' RON'">0</div>
+            <div class="kpi-sub">ramburs în curs</div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         VIEW: LISTA (default)
+    ════════════════════════════════════════ -->
+    <div th:if="${view == 'lista'}">
+
+        <div class="toolbar">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchLista" placeholder="Caută după nume, telefon sau adresă..."
+                       oninput="cautaLista(this.value)"/>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+                <button class="seg-filter-btn active" id="fltToti" onclick="filtrStatus('toti',this)">Toți</button>
+                <button class="seg-filter-btn" id="fltActivi" onclick="filtrStatus('activ',this)">✅ Activi</button>
+                <button class="seg-filter-btn" id="fltInactivi" onclick="filtrStatus('inactiv',this)">⚠️ Inactivi</button>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div th:if="${#lists.isEmpty(clienti)}" class="empty">
+                <div style="font-size:40px;opacity:.3;margin-bottom:12px">👥</div>
+                <p style="font-size:14px;font-weight:500">Niciun client înregistrat</p>
+                <span style="font-size:13px">Clienții se adaugă automat la prima comandă</span>
+            </div>
+            <table th:unless="${#lists.isEmpty(clienti)}" id="listaTable">
+                <thead>
+                <tr>
+                    <th>Nume Client</th>
+                    <th>Telefon</th>
+                    <th>Adresă</th>
+                    <th>Data Adăugare</th>
+                    <th>Status</th>
+                    <th style="text-align:center">Acțiuni</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${clienti}"
+                    th:attr="data-search=${c.nume + ' ' + c.telefon + ' ' + c.adresa},data-status=${inactivi.contains(c.id) ? 'inactiv' : 'activ'}">
+                    <td style="font-weight:500" th:text="${c.nume}">—</td>
+                    <td th:text="${c.telefon}">—</td>
+                    <td style="color:#888;font-size:13px" th:text="${c.adresa}">—</td>
+                    <td style="color:#aaa;font-size:12px"
+                        th:text="${#temporals.format(c.dataAdaugare,'dd MMM yyyy')}">—</td>
+                    <td>
+                        <span th:if="${inactivi.contains(c.id)}" class="badge-inactiv">Inactiv</span>
+                        <span th:unless="${inactivi.contains(c.id)}" class="badge-activ">Activ</span>
+                    </td>
+                    <td style="text-align:center;white-space:nowrap">
+                        <button type="button"
+                                th:data-id="${c.id}"
+                                th:data-nume="${c.nume}"
+                                th:data-telefon="${c.telefon}"
+                                th:data-adresa="${c.adresa}"
+                                onclick="deschideEditClientDin(this)"
+                                style="padding:4px 10px;background:#f0ebff;color:#6c47ff;border:none;border-radius:6px;font-size:12px;cursor:pointer;margin-right:4px">
+                            ✏️ Edit
+                        </button>
+                        <form th:action="@{/clienti/sterge/{id}(id=${c.id})}" method="post" style="display:inline"
+                              onsubmit="return confirm('Ștergi clientul? Comenzile asociate nu vor fi afectate.')">
+                            <button type="submit"
+                                    style="padding:4px 10px;background:#fdecea;color:#A32D2D;border:none;border-radius:6px;font-size:12px;cursor:pointer">
+                                🗑️ Șterge
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div><!-- end view lista -->
+
+    <!-- ════════════════════════════════════════
+         VIEW: RFM — simplificat
+    ════════════════════════════════════════ -->
+    <div th:if="${view == 'rfm'}">
+
+        <!-- Banner explicativ compact -->
+        <div class="rfm-banner">
+            <div class="rfm-banner-title">Ce este RFM?</div>
+            <div class="rfm-dims">
+                <div class="rfm-dim">
+                    <div class="rfm-dim-badge" style="background:#6c47ff">R</div>
+                    <div class="rfm-dim-text"><strong>Recency</strong> — cât de recent a cumpărat (5 = recent)</div>
+                </div>
+                <div class="rfm-dim">
+                    <div class="rfm-dim-badge" style="background:#378ADD">F</div>
+                    <div class="rfm-dim-text"><strong>Frequency</strong> — cât de des cumpără</div>
+                </div>
+                <div class="rfm-dim">
+                    <div class="rfm-dim-badge" style="background:#1D9E75">M</div>
+                    <div class="rfm-dim-text"><strong>Monetary</strong> — valoarea totală cheltuită</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Segment cards (click = filtrare) -->
+        <div class="segmente-row">
+            <div class="seg-card" style="--sc:#6c47ff" onclick="filtrSeg('VIP',this)">
+                <div class="seg-icon">👑</div>
+                <div class="seg-name">VIP</div>
+                <div class="seg-count" style="color:#6c47ff" th:text="${nrVip}">0</div>
+                <div class="seg-desc">Fideli, valoare mare</div>
+            </div>
+            <div class="seg-card" style="--sc:#1D9E75" onclick="filtrSeg('Fidel',this)">
+                <div class="seg-icon">⭐</div>
+                <div class="seg-name">Fideli</div>
+                <div class="seg-count" style="color:#1D9E75" th:text="${nrFidel}">0</div>
+                <div class="seg-desc">Cumpără des, activi</div>
+            </div>
+            <div class="seg-card" style="--sc:#378ADD" onclick="filtrSeg('Promițător',this)">
+                <div class="seg-icon">🚀</div>
+                <div class="seg-name">Promițători</div>
+                <div class="seg-count" style="color:#378ADD" th:text="${nrPromitator}">0</div>
+                <div class="seg-desc">Comenzi recente, frecvență mică</div>
+            </div>
+            <div class="seg-card" style="--sc:#f5a623" onclick="filtrSeg('La Risc',this)">
+                <div class="seg-icon">⚠️</div>
+                <div class="seg-name">La Risc</div>
+                <div class="seg-count" style="color:#f5a623" th:text="${nrLaRisc}">0</div>
+                <div class="seg-desc">Au lipsit recent</div>
+            </div>
+            <div class="seg-card" style="--sc:#E24B4A" onclick="filtrSeg('Inactiv',this)">
+                <div class="seg-icon">💤</div>
+                <div class="seg-name">Inactivi</div>
+                <div class="seg-count" style="color:#E24B4A" th:text="${nrInactiv}">0</div>
+                <div class="seg-desc">Nu au mai cumpărat</div>
+            </div>
+        </div>
+
+        <!-- Toolbar RFM -->
+        <div class="rfm-toolbar">
+            <div class="search-box" style="max-width:300px">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="Caută client..." oninput="cautaRFM(this.value)"/>
+            </div>
+            <button class="seg-filter-btn active" id="btnToate"
+                    style="background:#6c47ff;border-color:#6c47ff"
+                    onclick="filtrSeg('toate',this)">Toți clienții</button>
+        </div>
+
+        <!-- Tabel RFM simplificat -->
+        <div class="table-card">
+            <div th:if="${#lists.isEmpty(rfmScores)}" class="empty">
+                <div style="font-size:40px;opacity:.3;margin-bottom:12px">📊</div>
+                <p style="font-size:14px;font-weight:500">Nicio comandă înregistrată încă</p>
+                <span style="font-size:13px">Analiza apare automat după prima comandă</span>
+            </div>
+
+            <table th:unless="${#lists.isEmpty(rfmScores)}" id="rfmTable">
+                <thead>
+                <tr>
+                    <th>Client</th>
+                    <th>Segment</th>
+                    <th title="Scor Recency 1-5">R</th>
+                    <th title="Scor Frequency 1-5">F</th>
+                    <th title="Scor Monetary 1-5">M</th>
+                    <th>Comenzi</th>
+                    <th>Valoare Totală</th>
+                    <th>Ultima Comandă</th>
+                    <th>Acțiune</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${rfmScores}"
+                    th:attr="data-segment=${r.segment},data-search=${r.client.nume + ' ' + r.client.telefon}">
+
+                    <!-- Client -->
+                    <td>
+                        <div style="font-weight:500" th:text="${r.client.nume}">—</div>
+                        <div style="font-size:11px;color:#aaa" th:text="${r.client.telefon}">—</div>
+                    </td>
+
+                    <!-- Segment badge -->
+                    <td>
+                        <span class="seg-badge"
+                              th:style="'background:' + ${r.segmentCuloare} + '20;color:' + ${r.segmentCuloare}"
+                              th:text="${r.segmentIcon + ' ' + r.segment}">—</span>
+                    </td>
+
+                    <!-- Scoruri R, F, M — număr simplu cu pips mici -->
+                    <td>
+                        <div class="rfm-score-cell">
+                            <span th:each="i : ${#numbers.sequence(1,5)}"
+                                  class="pip" th:classappend="${i <= r.scoreR} ? ' on' : ''"></span>
+                            <span class="score-label" th:text="${r.scoreR}"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="rfm-score-cell">
+                            <span th:each="i : ${#numbers.sequence(1,5)}"
+                                  class="pip" th:classappend="${i <= r.scoreF} ? ' on' : ''"></span>
+                            <span class="score-label" th:text="${r.scoreF}"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="rfm-score-cell">
+                            <span th:each="i : ${#numbers.sequence(1,5)}"
+                                  class="pip" th:classappend="${i <= r.scoreM} ? ' on' : ''"></span>
+                            <span class="score-label" th:text="${r.scoreM}"></span>
+                        </div>
+                    </td>
+
+                    <!-- Nr comenzi -->
+                    <td style="font-weight:500;text-align:center" th:text="${r.frecventa}">0</td>
+
+                    <!-- Valoare totală -->
+                    <td style="font-weight:600;color:#333"
+                        th:text="${#numbers.formatDecimal(r.monetary,1,2)} + ' RON'">0</td>
+
+                    <!-- Ultima comandă -->
+                    <td style="color:#aaa;font-size:12px"
+                        th:text="${r.recency} + ' zile în urmă'">—</td>
+
+                    <!-- Acțiune recomandată — concisă -->
+                    <td>
+                        <div th:switch="${r.segment}">
+                            <span th:case="'VIP'" class="action-tag"
+                                  style="background:#f0ebff;color:#6c47ff">Ofertă exclusivă</span>
+                            <span th:case="'Fidel'" class="action-tag"
+                                  style="background:#e6f5ef;color:#1D9E75">Upsell</span>
+                            <span th:case="'Promițător'" class="action-tag"
+                                  style="background:#e8f1fb;color:#378ADD">Cod reducere</span>
+                            <span th:case="'La Risc'" class="action-tag"
+                                  style="background:#fff5e6;color:#f5a623">Reactivare</span>
+                            <span th:case="'Inactiv'" class="action-tag"
+                                  style="background:#fdecea;color:#E24B4A">Win-back</span>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div><!-- end view rfm -->
+
+</div><!-- end main -->
+
+<script>
+    /* ── Lista search ── */
+    function cautaLista(q) {
+        document.querySelectorAll('#listaTable tbody tr').forEach(function(row) {
+            var s = (row.dataset.search || '').toLowerCase();
+            row.style.display = (!q || s.includes(q.toLowerCase())) ? '' : 'none';
+        });
+    }
+
+    /* ── RFM segment filter ── */
+    var segActiv = 'toate';
+
+    function filtrSeg(seg, btn) {
+        segActiv = seg;
+        // reset card borders
+        document.querySelectorAll('.seg-card').forEach(function(c){ c.classList.remove('active-seg'); });
+        // reset filter buttons
+        document.querySelectorAll('.seg-filter-btn').forEach(function(b){
+            b.classList.remove('active');
+            b.style.background = 'white';
+            b.style.borderColor = '#e5e5e5';
+            b.style.color = '#555';
+        });
+        if (btn) {
+            if (btn.classList.contains('seg-card')) {
+                btn.classList.add('active-seg');
+            } else {
+                btn.classList.add('active');
+                btn.style.background = '#6c47ff';
+                btn.style.borderColor = '#6c47ff';
+                btn.style.color = 'white';
+            }
+        }
+        aplicaRFM();
+    }
+
+    /* ── Lista status filter ── */
+    var statusActiv = 'toti';
+    function filtrStatus(val, btn) {
+        statusActiv = val;
+        document.querySelectorAll('#fltToti,#fltActivi,#fltInactivi').forEach(function(b) {
+            b.classList.remove('active');
+            b.style.background = 'white'; b.style.borderColor = '#e5e5e5'; b.style.color = '#555';
+        });
+        if (btn) { btn.classList.add('active'); btn.style.background='#6c47ff'; btn.style.borderColor='#6c47ff'; btn.style.color='white'; }
+        aplicaFiltruLista();
+    }
+
+    function cautaLista(q) { aplicaFiltruLista(q); }
+
+    function aplicaFiltruLista(q) {
+        q = q || document.getElementById('searchLista').value;
+        document.querySelectorAll('#listaTable tbody tr').forEach(function(row) {
+            var s  = (row.dataset.search  || '').toLowerCase();
+            var st = (row.dataset.status  || '').toLowerCase();
+            var mQ = !q || s.includes(q.toLowerCase());
+            var mS = statusActiv === 'toti' || st === statusActiv;
+            row.style.display = (mQ && mS) ? '' : 'none';
+        });
+    }
+
+    /* ── Edit Client Modal ── */
+    function deschideEditClientDin(btn) {
+        deschideEditClient(
+            btn.getAttribute('data-id'),
+            btn.getAttribute('data-nume'),
+            btn.getAttribute('data-telefon'),
+            btn.getAttribute('data-adresa')
+        );
+    }
+
+    function deschideEditClient(id, nume, telefon, adresa) {
+        document.getElementById('ecId').value    = id;
+        document.getElementById('ecNume').value  = nume;
+        document.getElementById('ecTel').value   = telefon;
+        document.getElementById('ecAdr').value   = adresa;
+        document.getElementById('ecForm').action = '/clienti/edit/' + id;
+        document.getElementById('modalEditClient').style.display = 'flex';
+    }
+    function inchideEditClient() {
+        document.getElementById('modalEditClient').style.display = 'none';
+    }
+</script>
+
+<!-- Modal Edit Client -->
+<div id="modalEditClient" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:800;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:16px;padding:28px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,.15)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h2 style="font-size:18px;font-weight:700">✏️ Editează Client</h2>
+            <button onclick="inchideEditClient()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa">×</button>
+        </div>
+        <form id="ecForm" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="hidden" id="ecId" name="id"/>
+            <div style="margin-bottom:12px">
+                <label style="font-size:13px;font-weight:500;color:#444;display:block;margin-bottom:5px">Nume *</label>
+                <input type="text" id="ecNume" name="nume" required
+                       style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none"/>
+            </div>
+            <div style="margin-bottom:12px">
+                <label style="font-size:13px;font-weight:500;color:#444;display:block;margin-bottom:5px">Telefon *</label>
+                <input type="text" id="ecTel" name="telefon" required
+                       style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none"/>
+            </div>
+            <div style="margin-bottom:20px">
+                <label style="font-size:13px;font-weight:500;color:#444;display:block;margin-bottom:5px">Adresă</label>
+                <input type="text" id="ecAdr" name="adresa"
+                       style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none"/>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button type="button" onclick="inchideEditClient()"
+                        style="padding:9px 18px;border:1px solid #e5e5e5;border-radius:9px;background:white;font-size:13px;cursor:pointer">Anulează</button>
+                <button type="submit"
+                        style="padding:9px 22px;background:#6c47ff;color:white;border:none;border-radius:9px;font-size:13px;cursor:pointer;font-weight:500">✓ Salvează</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Analiză Marketing — SocialBiz</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f7;display:flex;min-height:100vh}
+        /* Sidebar */
+        .sidebar{width:220px;background:white;height:100vh;position:fixed;display:flex;flex-direction:column;padding:24px 16px;border-right:1px solid #eee;z-index:10}
+        .sidebar-brand h2{color:#6c47ff;font-size:16px;font-weight:700}
+        .sidebar-brand p{font-size:12px;color:#aaa;margin-top:2px}
+        .sidebar nav{margin-top:28px;flex:1;overflow-y:auto}
+        .sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;text-decoration:none;color:#555;border-radius:10px;margin-bottom:4px;font-size:14px}
+        .sidebar nav a:hover{background:#f5f0ff;color:#6c47ff}
+        .sidebar nav a.active{background:#f0ebff;color:#6c47ff;font-weight:500}
+        .sidebar-footer{background:#6c47ff;border-radius:10px;padding:12px;color:white;font-size:12px;margin-top:16px}
+        /* Main */
+        .main{margin-left:220px;padding:32px;flex:1;max-width:calc(100vw - 220px)}
+        .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
+        .page-header h1{font-size:24px;font-weight:600;color:#1a1a1a}
+        .page-header p{color:#888;font-size:14px;margin-top:4px}
+        /* KPI Row */
+        .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+        .kpi{background:white;border-radius:14px;padding:16px 14px;border:1px solid #eee;position:relative;overflow:hidden}
+        .kpi-label{font-size:12px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+        .kpi-value{font-size:24px;font-weight:700;line-height:1;margin-bottom:6px}
+        .kpi-sub{font-size:12px;color:#aaa}
+        .kpi-icon{position:absolute;right:14px;top:14px;font-size:26px;opacity:.13}
+        .kpi.green{border-left:4px solid #1D9E75} .kpi.green .kpi-value{color:#1D9E75}
+        .kpi.red{border-left:4px solid #E24B4A}   .kpi.red .kpi-value{color:#E24B4A}
+        .kpi.purple{border-left:4px solid #6c47ff} .kpi.purple .kpi-value{color:#6c47ff}
+        .kpi.orange{border-left:4px solid #f5a623} .kpi.orange .kpi-value{color:#f5a623}
+        .kpi.blue{border-left:4px solid #378ADD}   .kpi.blue .kpi-value{color:#378ADD}
+        /* Badge ROAS */
+        .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;display:inline-block}
+        .badge-bun{background:#d4edda;color:#155724}
+        .badge-ok{background:#fff3cd;color:#856404}
+        .badge-prag{background:#fce8e8;color:#A32D2D}
+        /* Layout grafice */
+        .charts-row{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-bottom:22px}
+        .charts-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:22px}
+        .card{background:white;border-radius:14px;border:1px solid #eee;padding:22px}
+        .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+        .card-title{font-size:15px;font-weight:600;color:#1a1a1a}
+        .card-sub{font-size:12px;color:#aaa}
+        /* Campanii table */
+        .card-full{background:white;border-radius:14px;border:1px solid #eee;overflow:hidden;margin-bottom:22px}
+        .card-full-header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid #f0f0f0}
+        table{width:100%;border-collapse:collapse}
+        thead th{padding:10px 16px;text-align:left;font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px;background:#fafafa;border-bottom:1px solid #f0f0f0}
+        tbody td{padding:13px 16px;font-size:13px;color:#333;border-bottom:1px solid #f7f7f7;vertical-align:middle}
+        tbody tr:last-child td{border-bottom:none}
+        tbody tr:hover td{background:#fafafa}
+        /* Platforma dots */
+        .plat-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+        .plat-INSTAGRAM{background:#E1306C} .plat-FACEBOOK{background:#1877F2}
+        .plat-TIKTOK{background:#111}       .plat-GOOGLE{background:#4285F4}
+        .plat-YOUTUBE{background:#FF0000}   .plat-ORGANIC{background:#1D9E75}
+        .plat-ALTELE{background:#aaa}       .plat-EMAIL{background:#f5a623}
+        /* Badge campanie status */
+        .st-ACTIVA{background:#d4edda;color:#155724}
+        .st-INCHEIATA{background:#f0f0f0;color:#888}
+        .st-PROGRAMATA{background:#fff3cd;color:#856404}
+        /* Bara sursa */
+        .sursa-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+        .sursa-row:last-child{margin-bottom:0}
+        .sursa-label{font-size:13px;color:#444;width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+        .sursa-track{flex:1;height:10px;background:#f0f0f0;border-radius:5px;overflow:hidden}
+        .sursa-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#6c47ff,#9b7fff);min-width:3px}
+        .sursa-val{font-size:12px;color:#6c47ff;font-weight:600;width:80px;text-align:right;flex-shrink:0}
+        /* Promo */
+        .promo-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f7f7f7}
+        .promo-row:last-child{border-bottom:none}
+        .promo-cod{font-size:13px;font-weight:600;background:#f0ebff;color:#6c47ff;padding:3px 10px;border-radius:6px;letter-spacing:.5px}
+        .promo-util{font-size:11px;color:#aaa;margin-top:2px}
+        .promo-val{font-size:13px;font-weight:600;color:#1D9E75}
+        /* Recomandarile */
+        .rec-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #f7f7f7}
+        .rec-item:last-child{border-bottom:none}
+        .rec-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+        .rec-text{font-size:13px;color:#333;line-height:1.5}
+        .rec-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+        .rec-label.warn{color:#856404} .rec-label.ok{color:#155724} .rec-label.info{color:#0c5c8a}
+        /* ROAS gauge */
+        .roas-gauge{text-align:center;padding:10px 0}
+        .roas-big{font-size:48px;font-weight:800;line-height:1}
+        .roas-scale{display:flex;gap:4px;margin:12px 0 6px;height:8px;border-radius:4px;overflow:hidden}
+        .roas-s1{flex:1;background:#E24B4A} .roas-s2{flex:1;background:#f5a623} .roas-s3{flex:2;background:#1D9E75}
+        .roas-markers{display:flex;justify-content:space-between;font-size:10px;color:#aaa}
+        /* Btn */
+        .btn-primary{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#6c47ff;color:white;border:none;border-radius:10px;font-size:13px;cursor:pointer;font-weight:500;text-decoration:none}
+        .btn-primary:hover{background:#5a38e0}
+        .btn-sm{padding:4px 12px;font-size:12px;border-radius:7px;border:none;cursor:pointer;font-weight:500}
+        .btn-danger{background:#fcebeb;color:#A32D2D}
+        /* Empty */
+        .empty{text-align:center;padding:48px 20px;color:#aaa}
+        .empty-icon{font-size:36px;opacity:.3;margin-bottom:10px}
+        /* Modal */
+        .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+        .overlay.open{display:flex}
+        .modal{background:white;border-radius:16px;width:540px;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,.18)}
+        .modal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px}
+        .modal-title{font-size:20px;font-weight:600}
+        .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#aaa;line-height:1}
+        .modal-close:hover{color:#333}
+        .form-group{margin-bottom:14px}
+        .form-group label{display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;outline:none;background:#fafafa;font-family:inherit}
+        .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#6c47ff;background:white}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid #f0f0f0}
+        .btn-cancel{padding:9px 20px;border:1px solid #e5e5e5;border-radius:9px;background:white;font-size:13px;cursor:pointer;color:#555}
+        .btn-save{padding:9px 22px;background:#6c47ff;color:white;border:none;border-radius:9px;font-size:13px;cursor:pointer;font-weight:500}
+        canvas{max-height:200px}
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}" class="active">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit" style="width:100%;padding:10px 12px;background:none;border:none;text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:10px">← Deconectează-te</button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Platforma ta de vânzări</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h1>📈 Marketing &amp; Campanii</h1>
+            <p>Monitorizează ROI-ul, eficiența campaniilor și sursele de venit</p>
+        </div>
+        <button class="btn-primary" onclick="document.getElementById('modalCampanie').classList.add('open')">
+            + Campanie Nouă
+        </button>
+    </div>
+
+    <!-- KPI 5 coloane -->
+    <div class="kpi-row">
+        <div class="kpi green">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-label">Venit Total</div>
+            <div class="kpi-value" th:text="${venitTotal} + ' RON'">0</div>
+            <div class="kpi-sub">Din comenzi finalizate</div>
+        </div>
+        <div class="kpi red">
+            <div class="kpi-icon">🎯</div>
+            <div class="kpi-label">Buget Reclame</div>
+            <div class="kpi-value" th:text="${bugetCheltuit} + ' RON'">0</div>
+            <div class="kpi-sub" th:text="${nrCampaniiActive} + ' campanii active'">0 active</div>
+        </div>
+        <div class="kpi" th:classappend="${profitPozitiv ? ' green' : ' red'}">
+            <div class="kpi-icon">📉</div>
+            <div class="kpi-label">Profit Net Estimat</div>
+            <div class="kpi-value" th:text="${profitEstimat} + ' RON'">0</div>
+            <div class="kpi-sub">Venit − Buget − Influenceri</div>
+        </div>
+        <div class="kpi blue">
+            <div class="kpi-icon">🌟</div>
+            <div class="kpi-label">Cost Influenceri</div>
+            <div class="kpi-value" th:text="${costInfluenceri} + ' RON'">0</div>
+            <div class="kpi-sub">Comisioane datorate</div>
+        </div>
+        <div class="kpi purple">
+            <div class="kpi-icon">📱</div>
+            <div class="kpi-label">Sursa #1</div>
+            <div class="kpi-value" style="font-size:16px;padding-top:4px" th:text="${sursaPrincipala != null ? sursaPrincipala : '—'}">—</div>
+            <div class="kpi-sub" th:text="${procentSursa} + '% din venit'">0%</div>
+        </div>
+    </div>
+
+    <!-- Grafice row 1: trend + surse + ROAS gauge -->
+    <div class="charts-row-3">
+        <!-- Trend venit 6 luni -->
+        <div class="card" style="grid-column: span 2">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Trend Venit — ultimele 6 luni</div>
+                    <div class="card-sub">RON din comenzi finalizate</div>
+                </div>
+            </div>
+            <canvas id="chartLunar"></canvas>
+            <div th:if="${#lists.isEmpty(lunarLabels)}" class="empty" style="padding:24px 0">
+                <div class="empty-icon">📈</div>
+                <p style="font-size:13px">Nicio comandă finalizată încă</p>
+            </div>
+        </div>
+
+        <!-- ROAS — compact, non-tehnic -->
+        <div class="card">
+            <div class="card-header" style="margin-bottom:14px">
+                <div>
+                    <div class="card-title">📊 Eficiența Publicității</div>
+                    <div class="card-sub">Câștig per RON investit în reclame</div>
+                </div>
+            </div>
+
+            <!-- Cele doua valori ROAS, side by side -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                <!-- Aparent -->
+                <div style="background:#fafafa;border-radius:10px;padding:12px;text-align:center;border:1px solid #f0f0f0">
+                    <div style="font-size:10px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Brut</div>
+                    <div th:style="'font-size:28px;font-weight:800;line-height:1;color:' + ${roasStatus == 'Bun' ? '#1D9E75' : (roasStatus == 'Ok' ? '#f5a623' : '#E24B4A')}"
+                         th:text="${roas} + 'x'">0x</div>
+                    <div style="font-size:10px;color:#bbb;margin:4px 0 6px">venit / buget</div>
+                    <span th:class="'badge badge-' + ${roasStatus == 'Bun' ? 'bun' : (roasStatus == 'Ok' ? 'ok' : 'prag')}"
+                          th:text="${roasStatus}">—</span>
+                </div>
+                <!-- Real -->
+                <div style="border-radius:10px;padding:12px;text-align:center;border:2px solid #6c47ff;background:#faf8ff">
+                    <div style="font-size:10px;color:#6c47ff;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Real</div>
+                    <div th:style="'font-size:28px;font-weight:800;line-height:1;color:' + ${roasRealStatus == 'Bun' ? '#1D9E75' : (roasRealStatus == 'Ok' ? '#f5a623' : '#E24B4A')}"
+                         th:text="${roasReal} + 'x'">0x</div>
+                    <div style="font-size:10px;color:#bbb;margin:4px 0 6px">după retururi</div>
+                    <span th:class="'badge badge-' + ${roasRealStatus == 'Bun' ? 'bun' : (roasRealStatus == 'Ok' ? 'ok' : 'prag')}"
+                          th:text="${roasRealStatus}">—</span>
+                </div>
+            </div>
+
+            <!-- Scala vizuala unica -->
+            <div class="roas-scale" style="margin-bottom:3px">
+                <div class="roas-s1"></div><div class="roas-s2"></div><div class="roas-s3"></div>
+            </div>
+            <div class="roas-markers"><span>0x pierdere</span><span>1x echilibru</span><span>2x+ profit</span></div>
+
+            <!-- Explicatie simpla -->
+            <div style="background:#f8f5ff;border-radius:8px;padding:9px 12px;margin-top:12px;font-size:12px;color:#555;line-height:1.5">
+                💡 <strong>Real</strong> = ROAS calculat după scăderea retururilor
+                (<span th:text="${costuriRetururi}">0</span> RON) — imaginea mai corectă a profitabilității.
+            </div>
+
+            <!-- Mesaj de actiune -->
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid #f5f5f5">
+                <div class="rec-item" th:if="${roasRealStatus == 'Sub Prag'}">
+                    <div class="rec-icon">⚠️</div>
+                    <div class="rec-text">
+                        <div class="rec-label warn">Atenție</div>
+                        Campaniile nu sunt profitabile. Revizuiește bugetul sau verifică rata de retururi.
+                    </div>
+                </div>
+                <div class="rec-item" th:if="${roasRealStatus == 'Ok'}">
+                    <div class="rec-icon">💡</div>
+                    <div class="rec-text">
+                        <div class="rec-label info">Optimizare</div>
+                        Ești la prag. Încearcă să reduci retururile sau să crești valoarea medie a comenzii.
+                    </div>
+                </div>
+                <div class="rec-item" th:if="${roasRealStatus == 'Bun'}">
+                    <div class="rec-icon">🚀</div>
+                    <div class="rec-text">
+                        <div class="rec-label ok">Profitabil</div>
+                        Campaniile funcționează bine. Poți scala investiția!
+                    </div>
+                </div>
+                <div class="rec-item" th:if="${#maps.isEmpty(venitPeSursa)}">
+                    <div class="rec-icon">📌</div>
+                    <div class="rec-text">
+                        <div class="rec-label info">Sfat</div>
+                        Adaugă sursa comenzilor (Instagram, TikTok) pentru a vedea ce canal convertește mai bine.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grafice row 2: surse + comenzi pe sursa + coduri promo -->
+    <div class="charts-row-3">
+        <!-- Venit pe sursa -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Venit pe Sursă</div>
+                <div class="card-sub" th:text="${#maps.size(venitPeSursa)} + ' surse'">0 surse</div>
+            </div>
+            <div th:if="${#maps.isEmpty(venitPeSursa)}" class="empty" style="padding:20px 0">
+                <div class="empty-icon">📊</div>
+                <p style="font-size:13px">Nicio sursă înregistrată</p>
+            </div>
+            <div th:unless="${#maps.isEmpty(venitPeSursa)}">
+                <div th:each="entry : ${venitPeSursa}" class="sursa-row">
+                    <div class="sursa-label">
+                        <span th:class="'plat-dot plat-' + ${entry.key}"></span>
+                        <span th:text="${entry.key}">—</span>
+                    </div>
+                    <div class="sursa-track">
+                        <div class="sursa-fill"
+                             th:style="'width:' + ${venitMaxim > 0 ? (entry.value / venitMaxim * 100) : 0} + '%'"></div>
+                    </div>
+                    <div class="sursa-val" th:text="${#numbers.formatDecimal(entry.value,1,2)} + ' RON'">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comenzi pe sursa (donut) -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Comenzi pe Sursă</div>
+            </div>
+            <div th:if="${#maps.isEmpty(comenziPeSursa)}" class="empty" style="padding:20px 0">
+                <div class="empty-icon">📦</div>
+                <p style="font-size:13px">Nicio sursă</p>
+            </div>
+            <canvas id="chartSurse" th:unless="${#maps.isEmpty(comenziPeSursa)}"></canvas>
+            <div th:unless="${#maps.isEmpty(comenziPeSursa)}" style="margin-top:14px">
+                <div th:each="entry : ${comenziPeSursa}"
+                     style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f7f7f7">
+                    <span>
+                        <span th:class="'plat-dot plat-' + ${entry.key}"></span>
+                        <span th:text="${entry.key}">—</span>
+                    </span>
+                    <strong th:text="${entry.value} + ' comenzi'">0</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top coduri promo -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Top Coduri Promo</div>
+                <div class="card-sub">Influenceri &amp; reduceri</div>
+            </div>
+            <div th:if="${#lists.isEmpty(topCoduriPromo)}" class="empty" style="padding:20px 0">
+                <div class="empty-icon">%</div>
+                <p style="font-size:13px">Niciun cod promo înregistrat</p>
+                <span style="font-size:12px">Codurile apar automat din comenzile Smart Input</span>
+            </div>
+            <div th:unless="${#lists.isEmpty(topCoduriPromo)}">
+                <div th:each="row,i : ${topCoduriPromo}" class="promo-row">
+                    <div>
+                        <span class="promo-cod" th:text="${row.cod}">—</span>
+                        <div class="promo-util" th:text="${row.utilizari} + ' utilizări'">0</div>
+                    </div>
+                    <span class="promo-val" th:text="${row.venit} + ' RON'">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel campanii -->
+    <div class="card-full">
+        <div class="card-full-header">
+            <div>
+                <div class="card-title" style="margin-bottom:2px">Campanii Marketing</div>
+                <div class="card-sub" th:text="${#lists.size(campanii)} + ' campanii înregistrate'">0</div>
+            </div>
+            <button class="btn-primary" onclick="document.getElementById('modalCampanie').classList.add('open')">
+                + Campanie Nouă
+            </button>
+        </div>
+
+        <div th:if="${#lists.isEmpty(campanii)}" class="empty">
+            <div class="empty-icon">📊</div>
+            <p>Nicio campanie înregistrată</p>
+            <span>Adaugă campaniile tale de Facebook, Instagram, TikTok sau Google Ads pentru a urmări ROAS-ul</span>
+        </div>
+
+        <table th:unless="${#lists.isEmpty(campanii)}">
+            <thead>
+            <tr>
+                <th>Campanie</th>
+                <th>Platformă</th>
+                <th>Buget RON</th>
+                <th>Perioadă</th>
+                <th>Cod Promo</th>
+                <th>Reducere</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${campanii}">
+                <td>
+                    <div style="font-weight:500" th:text="${c.nume}">—</div>
+                    <div style="font-size:11px;color:#aaa" th:if="${c.note != null}" th:text="${c.note}"></div>
+                </td>
+                <td>
+                    <span th:class="'plat-dot plat-' + ${c.platforma.name()}"></span>
+                    <span th:text="${c.platforma.name()}">—</span>
+                </td>
+                <td style="font-weight:600;color:#6c47ff"
+                    th:text="${#numbers.formatDecimal(c.bugetCheltuit,1,2)} + ' RON'">0</td>
+                <td style="font-size:12px;color:#888">
+                    <span th:text="${c.dataStart != null ? #temporals.format(c.dataStart,'dd.MM.yy') : '—'}"></span>
+                    <span th:if="${c.dataStop != null}"> → </span>
+                    <span th:text="${c.dataStop != null ? #temporals.format(c.dataStop,'dd.MM.yy') : ''}"></span>
+                </td>
+                <td>
+                        <span th:if="${c.codPromo != null}"
+                              style="background:#f0ebff;color:#6c47ff;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600"
+                              th:text="${c.codPromo}">—</span>
+                    <span th:unless="${c.codPromo != null}" style="color:#ddd">—</span>
+                </td>
+                <td>
+                    <span th:if="${c.areReducere}"
+                          style="background:#eaf3de;color:#3B6D11;padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap"
+                          th:text="${(c.tipReducere != null and c.tipReducere.name() == 'PROCENT' ? #numbers.formatDecimal(c.valoareReducere,1,0) + '%' : #numbers.formatDecimal(c.valoareReducere,1,2) + ' RON')
+                                    + (c.aplicabilitate != null and c.aplicabilitate.name() == 'PRODUSE_SELECTATE' ? ' · selectiv' : ' · toate produsele')}">—</span>
+                    <span th:unless="${c.areReducere}" style="color:#ddd">—</span>
+                </td>
+                <td>
+                    <form th:action="@{/analiza-marketing/campanie/status/{id}(id=${c.id})}" method="post">
+                        <select name="status"
+                                style="padding:4px 8px;border:1px solid #eee;border-radius:7px;font-size:12px;outline:none;cursor:pointer"
+                                onchange="this.form.submit()">
+                            <option value="ACTIVA"     th:selected="${c.status.name()=='ACTIVA'}">✅ Activă</option>
+                            <option value="PROGRAMATA" th:selected="${c.status.name()=='PROGRAMATA'}">🕐 Programată</option>
+                            <option value="INCHEIATA"  th:selected="${c.status.name()=='INCHEIATA'}">⏹ Încheiată</option>
+                        </select>
+                    </form>
+                </td>
+                <td>
+                    <button type="button" class="btn-sm"
+                            style="background:#f0ebff;color:#6c47ff;border:none"
+                            th:attr="onclick='deschideEditareCampanie(' + ${c.id} + ')'">
+                        ✎ Editează
+                    </button>
+                </td>
+                <td>
+                    <form th:action="@{/analiza-marketing/campanie/sterge/{id}(id=${c.id})}" method="post"
+                          onsubmit="return confirm('Ștergi campania?')">
+                        <button type="submit" class="btn-sm btn-danger">🗑 Șterge</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- Modal Campanie Nouă -->
+<div class="overlay" id="modalCampanie">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">Campanie Nouă</div>
+                <div style="font-size:13px;color:#aaa;margin-top:3px">Urmărește bugetul și ROAS-ul campaniei</div>
+            </div>
+            <button class="modal-close"
+                    onclick="document.getElementById('modalCampanie').classList.remove('open')">×</button>
+        </div>
+        <form th:action="@{/analiza-marketing/campanie/adauga}" method="post">
+            <div class="form-group">
+                <label>Numele campaniei *</label>
+                <input type="text" name="nume" placeholder="ex: Summer Sale Instagram — Iulie 2025" required/>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Platformă *</label>
+                    <select name="platforma" required>
+                        <option value="" disabled selected>— Alege —</option>
+                        <option th:each="p : ${platforme}" th:value="${p.name()}" th:text="${p.name()}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Buget Cheltuit (RON)</label>
+                    <input type="number" name="bugetCheltuit" step="0.01" min="0" placeholder="0.00"/>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Data Start</label>
+                    <input type="date" name="dataStart"/>
+                </div>
+                <div class="form-group">
+                    <label>Data Stop</label>
+                    <input type="date" name="dataStop"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Cod Promoțional asociat</label>
+                <input type="text" name="codPromo" placeholder="ex: SUMMER20, INFLUENCER10 (opțional)"/>
+            </div>
+
+            <!-- Bloc reducere — colapsat implicit, ca să nu încarce formularul când nu e nevoie -->
+            <div class="form-group" style="background:#faf9ff;border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:16px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:0">
+                    <input type="checkbox" name="areReducere" value="true" id="add-areReducere"
+                           onchange="document.getElementById('add-blocReducere').style.display = this.checked ? 'block' : 'none'"
+                           style="width:auto;margin:0"/>
+                    Acest cod oferă o reducere clienților?
+                </label>
+                <div id="add-blocReducere" style="display:none;margin-top:12px">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Tip reducere</label>
+                            <select name="tipReducere" id="add-tipReducere">
+                                <option value="PROCENT">Procent (%)</option>
+                                <option value="SUMA_FIXA">Sumă fixă (RON / buc)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label id="add-labelValoare">Valoare reducere (%)</label>
+                            <input type="number" name="valoareReducere" id="add-valoareReducere"
+                                   step="0.01" min="0" placeholder="ex: 15"/>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label>Se aplică pe</label>
+                        <select name="aplicabilitate" id="add-aplicabilitate"
+                                onchange="document.getElementById('add-blocProduse').style.display = this.value === 'PRODUSE_SELECTATE' ? 'block' : 'none'">
+                            <option value="TOATE_PRODUSELE">Toate produsele</option>
+                            <option value="PRODUSE_SELECTATE">Produse selectate</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="add-blocProduse" style="display:none;margin-bottom:0">
+                        <label>Produse eligibile</label>
+                        <select name="produseEligibile" multiple size="5" style="height:auto">
+                            <option th:each="p : ${produseActive}" th:value="${p.codSKU}"
+                                    th:text="${p.nume} + ' (' + ${p.codSKU} + ')'"></option>
+                        </select>
+                        <div style="font-size:11px;color:#aaa;margin-top:4px">Ține apăsat Ctrl (sau Cmd pe Mac) pentru a selecta mai multe produse.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Note / Obiectiv</label>
+                <textarea name="note" rows="2"
+                          placeholder="Target audiență, obiectiv campanie, observații..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel"
+                        onclick="document.getElementById('modalCampanie').classList.remove('open')">Anulează</button>
+                <button type="submit" class="btn-save">💾 Salvează Campania</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Editare Campanie -->
+<div class="overlay" id="modalEditareCampanie">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">Editează Campania</div>
+                <div style="font-size:13px;color:#aaa;margin-top:3px">Actualizează detaliile și reducerea asociată</div>
+            </div>
+            <button class="modal-close"
+                    onclick="document.getElementById('modalEditareCampanie').classList.remove('open')">×</button>
+        </div>
+        <form id="form-editareCampanie" th:action="@{/analiza-marketing/campanie/editeaza/0}" method="post">
+            <div class="form-group">
+                <label>Numele campaniei *</label>
+                <input type="text" name="nume" id="edit-nume" required/>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Platformă *</label>
+                    <select name="platforma" id="edit-platforma" required>
+                        <option th:each="p : ${platforme}" th:value="${p.name()}" th:text="${p.name()}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Buget Cheltuit (RON)</label>
+                    <input type="number" name="bugetCheltuit" id="edit-bugetCheltuit" step="0.01" min="0"/>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Data Start</label>
+                    <input type="date" name="dataStart" id="edit-dataStart"/>
+                </div>
+                <div class="form-group">
+                    <label>Data Stop</label>
+                    <input type="date" name="dataStop" id="edit-dataStop"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Cod Promoțional asociat</label>
+                <input type="text" name="codPromo" id="edit-codPromo" placeholder="ex: SUMMER20, INFLUENCER10 (opțional)"/>
+            </div>
+
+            <div class="form-group" style="background:#faf9ff;border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:16px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:0">
+                    <input type="checkbox" name="areReducere" value="true" id="edit-areReducere"
+                           onchange="document.getElementById('edit-blocReducere').style.display = this.checked ? 'block' : 'none'"
+                           style="width:auto;margin:0"/>
+                    Acest cod oferă o reducere clienților?
+                </label>
+                <div id="edit-blocReducere" style="display:none;margin-top:12px">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Tip reducere</label>
+                            <select name="tipReducere" id="edit-tipReducere">
+                                <option value="PROCENT">Procent (%)</option>
+                                <option value="SUMA_FIXA">Sumă fixă (RON / buc)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label id="edit-labelValoare">Valoare reducere (%)</label>
+                            <input type="number" name="valoareReducere" id="edit-valoareReducere"
+                                   step="0.01" min="0" placeholder="ex: 15"/>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label>Se aplică pe</label>
+                        <select name="aplicabilitate" id="edit-aplicabilitate"
+                                onchange="document.getElementById('edit-blocProduse').style.display = this.value === 'PRODUSE_SELECTATE' ? 'block' : 'none'">
+                            <option value="TOATE_PRODUSELE">Toate produsele</option>
+                            <option value="PRODUSE_SELECTATE">Produse selectate</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="edit-blocProduse" style="display:none;margin-bottom:0">
+                        <label>Produse eligibile</label>
+                        <select name="produseEligibile" id="edit-produseEligibile" multiple size="5" style="height:auto">
+                            <option th:each="p : ${produseActive}" th:value="${p.codSKU}"
+                                    th:text="${p.nume} + ' (' + ${p.codSKU} + ')'"></option>
+                        </select>
+                        <div style="font-size:11px;color:#aaa;margin-top:4px">Ține apăsat Ctrl (sau Cmd pe Mac) pentru a selecta mai multe produse.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Note / Obiectiv</label>
+                <textarea name="note" id="edit-note" rows="2"
+                          placeholder="Target audiență, obiectiv campanie, observații..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel"
+                        onclick="document.getElementById('modalEditareCampanie').classList.remove('open')">Anulează</button>
+                <button type="submit" class="btn-save">💾 Salvează Modificările</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Date pentru grafice (th:data-* — fără inline, fără erori IDE) -->
+<div id="mktChartData" style="display:none"
+     th:data-lunar-labels="${#strings.listJoin(lunarLabels, '|')}"
+     th:data-lunar-valori="${#strings.listJoin(lunarValori, ',')}"
+     th:data-surse-labels="${#strings.listJoin(comenziPeSursa.keySet(), '|')}"
+     th:data-surse-valori="${#strings.listJoin(comenziPeSursa.values(), ',')}">
+</div>
+
+<script>
+    /* ── Close modal on overlay click ── */
+    document.getElementById('modalCampanie').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('open');
+    });
+    document.getElementById('modalEditareCampanie').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('open');
+    });
+
+    /* ── Label-ul valorii reducerii se adaptează la tipul ales (% vs RON) ── */
+    function actualizeazaLabelValoare(prefix) {
+        var tip = document.getElementById(prefix + '-tipReducere').value;
+        document.getElementById(prefix + '-labelValoare').textContent =
+            tip === 'PROCENT' ? 'Valoare reducere (%)' : 'Valoare reducere (RON / buc)';
+    }
+    document.getElementById('add-tipReducere').addEventListener('change', function() { actualizeazaLabelValoare('add'); });
+    document.getElementById('edit-tipReducere').addEventListener('change', function() { actualizeazaLabelValoare('edit'); });
+
+    /* ── Deschide modalul de editare și îl populează cu datele campaniei ── */
+    function deschideEditareCampanie(id) {
+        fetch('/analiza-marketing/campanie/edit/' + id)
+            .then(r => r.json())
+            .then(c => {
+                document.getElementById('form-editareCampanie').action = '/analiza-marketing/campanie/editeaza/' + id;
+                document.getElementById('edit-nume').value = c.nume || '';
+                document.getElementById('edit-platforma').value = c.platforma || '';
+                document.getElementById('edit-bugetCheltuit').value = c.bugetCheltuit != null ? c.bugetCheltuit : '';
+                document.getElementById('edit-dataStart').value = c.dataStart || '';
+                document.getElementById('edit-dataStop').value = c.dataStop || '';
+                document.getElementById('edit-codPromo').value = c.codPromo || '';
+                document.getElementById('edit-note').value = c.note || '';
+
+                var areReducere = !!c.areReducere;
+                document.getElementById('edit-areReducere').checked = areReducere;
+                document.getElementById('edit-blocReducere').style.display = areReducere ? 'block' : 'none';
+                document.getElementById('edit-tipReducere').value = c.tipReducere || 'PROCENT';
+                document.getElementById('edit-valoareReducere').value = c.valoareReducere != null ? c.valoareReducere : '';
+                actualizeazaLabelValoare('edit');
+
+                var aplicabilitate = c.aplicabilitate || 'TOATE_PRODUSELE';
+                document.getElementById('edit-aplicabilitate').value = aplicabilitate;
+                var blocProduse = document.getElementById('edit-blocProduse');
+                blocProduse.style.display = aplicabilitate === 'PRODUSE_SELECTATE' ? 'block' : 'none';
+
+                var produseEligibile = c.produseEligibile || [];
+                var select = document.getElementById('edit-produseEligibile');
+                Array.from(select.options).forEach(function(opt) {
+                    opt.selected = produseEligibile.indexOf(opt.value) !== -1;
+                });
+
+                document.getElementById('modalEditareCampanie').classList.add('open');
+            })
+            .catch(() => alert('Nu am putut încărca datele campaniei.'));
+    }
+
+    /* ── Citire date grafice ── */
+    var el = document.getElementById('mktChartData');
+
+    var lunarLabels = el.dataset.lunarLabels ? el.dataset.lunarLabels.split('|') : [];
+    var lunarValori = el.dataset.lunarValori ? el.dataset.lunarValori.split(',').map(Number) : [];
+    var surseLabels = el.dataset.surseLabels ? el.dataset.surseLabels.split('|') : [];
+    var surseValori = el.dataset.surseValori ? el.dataset.surseValori.split(',').map(Number) : [];
+
+    /* ── Grafic Trend Lunar (Line) ── */
+    var ctxLunar = document.getElementById('chartLunar');
+    if (ctxLunar && lunarLabels.length > 0) {
+        new Chart(ctxLunar, {
+            type: 'line',
+            data: {
+                labels: lunarLabels,
+                datasets: [{
+                    label: 'Venit RON',
+                    data: lunarValori,
+                    borderColor: '#6c47ff',
+                    backgroundColor: 'rgba(108,71,255,0.08)',
+                    borderWidth: 2.5,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#6c47ff',
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return ctx.parsed.y.toFixed(2) + ' RON'; }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f5f5f5' }, ticks: { font: { size: 11 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+    }
+
+    /* ── Grafic Comenzi pe Surse (Doughnut) ── */
+    var ctxSurse = document.getElementById('chartSurse');
+    var PLAT_COLORS = {
+        INSTAGRAM: '#E1306C', FACEBOOK: '#1877F2', TIKTOK: '#111111',
+        GOOGLE: '#4285F4', YOUTUBE: '#FF0000', ORGANIC: '#1D9E75',
+        EMAIL: '#f5a623', ALTELE: '#aaa'
+    };
+    if (ctxSurse && surseLabels.length > 0) {
+        var bgColors = surseLabels.map(function(l) {
+            return PLAT_COLORS[l.toUpperCase()] || '#9b7fff';
+        });
+        new Chart(ctxSurse, {
+            type: 'doughnut',
+            data: {
+                labels: surseLabels,
+                datasets: [{
+                    data: surseValori,
+                    backgroundColor: bgColors,
+                    borderWidth: 2,
+                    borderColor: 'white'
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '65%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return ctx.label + ': ' + ctx.parsed + ' comenzi'; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

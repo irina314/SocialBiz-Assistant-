@@ -1,0 +1,65 @@
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  SNIPPET: Butoane generare documente PDF
+  Adaugă în comenzi.html, în celula de acțiuni din tabelul de comenzi
+  (lângă butonul de editare existent).
+  ═══════════════════════════════════════════════════════════════════════════
+-->
+
+<!-- CSS — adaugă în blocul <style> din comenzi.html -->
+<style>
+    .btn-doc {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: opacity .15s;
+        white-space: nowrap;
+    }
+    .btn-doc:hover { opacity: .82; }
+    .btn-doc.aviz    { background: #e6f1fb; color: #185FA5; border: 1px solid #b3d0f0; }
+    .btn-doc.proforma{ background: #f0ebff; color: #6c47ff; border: 1px solid #c9baff; }
+    .doc-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+</style>
+
+
+<!-- HTML — înlocuiește / completează celula de acțiuni din th:each="comanda : ${comenzi}" -->
+<!-- Plasează imediat după butonul de editare existent -->
+
+<div class="doc-group">
+    <a th:href="@{/comenzi/{id}/aviz-pdf(id=${comanda.id})}"
+       class="btn-doc aviz"
+       target="_blank"
+       title="Descarcă Aviz de Expediție PDF">
+        📄 Aviz
+    </a>
+    <a th:href="@{/comenzi/{id}/proforma-pdf(id=${comanda.id})}"
+       class="btn-doc proforma"
+       target="_blank"
+       title="Descarcă Factură Proformă PDF">
+        🧾 Proformă
+    </a>
+</div>
+
+
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  pom.xml — adaugă dependința OpenPDF în secțiunea <dependencies>
+  ═══════════════════════════════════════════════════════════════════════════
+
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>1.3.43</version>
+        </dependency>
+
+  ═══════════════════════════════════════════════════════════════════════════
+  SecurityConfig — adaugă /profil/** și /comenzi/**/aviz-pdf și proforma-pdf
+  la .requestMatchers autenticate (sunt deja autenticate implicit dacă ai
+  .anyRequest().authenticated(), nu trebuie nimic în plus).
+  ═══════════════════════════════════════════════════════════════════════════
+-->

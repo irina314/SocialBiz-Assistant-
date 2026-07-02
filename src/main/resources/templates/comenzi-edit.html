@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Editare Comandă - SocialBiz</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f7; display: flex; min-height: 100vh; }
+        .sidebar { width: 220px; background: white; height: 100vh; position: fixed; display: flex; flex-direction: column; padding: 24px 16px; border-right: 1px solid #eee; }
+        .sidebar-brand h2 { color: #6c47ff; font-size: 16px; font-weight: 700; }
+        .sidebar-brand p { font-size: 12px; color: #aaa; margin-top: 2px; }
+        .sidebar nav { margin-top: 28px; flex: 1; overflow-y: auto; }
+        .sidebar nav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; text-decoration: none; color: #555; border-radius: 10px; margin-bottom: 4px; font-size: 14px; }
+        .sidebar nav a:hover { background: #f5f0ff; color: #6c47ff; }
+        .sidebar nav a.active { background: #f0ebff; color: #6c47ff; font-weight: 500; }
+        .sidebar-footer { background: #6c47ff; border-radius: 10px; padding: 12px; color: white; font-size: 12px; margin-top: auto; }
+        .main { margin-left: 220px; padding: 32px; flex: 1; display: flex; justify-content: center; }
+        .card { background: white; border-radius: 16px; border: 1px solid #eee; padding: 32px; width: 100%; max-width: 640px; height: fit-content; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .card-header h1 { font-size: 22px; font-weight: 600; }
+        .card-header p { color: #888; font-size: 13px; margin-top: 4px; }
+        .badge-id { background: #f0ebff; color: #6c47ff; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 10px; font-size: 14px; outline: none; background: #fafafa; color: #333; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #6c47ff; background: white; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .section-title { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 12px; margin-top: 4px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+        /* Produse */
+        .produse-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1.8fr 36px; gap: 8px; margin-bottom: 6px; }
+        .produse-header span { font-size: 11px; color: #888; }
+        .produs-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1.8fr 36px; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .produs-row input, .produs-row select { padding: 8px 10px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 13px; background: #fafafa; width: 100%; outline: none; }
+        .produs-row input:focus { border-color: #6c47ff; background: white; }
+        .tva-group { display: flex; gap: 3px; }
+        .tva-opt { padding: 6px 8px; border: 1.5px solid #e5e5e5; border-radius: 7px; background: #fafafa; font-size: 11px; cursor: pointer; color: #555; font-weight: 500; flex: 1; }
+        .tva-opt:hover { border-color: #6c47ff; color: #6c47ff; }
+        .tva-opt.sel { border-color: #6c47ff; background: #6c47ff; color: white; }
+        .total-line { text-align: right; font-size: 14px; font-weight: 600; color: #6c47ff; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+        /* Tracking */
+        .tracking-box { background: #f9f7ff; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .tracking-title { font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+        /* Status */
+        .status-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        /* Actions */
+        .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f0f0f0; }
+        .btn-cancel { padding: 10px 20px; border: 1px solid #e5e5e5; border-radius: 10px; background: white; font-size: 14px; cursor: pointer; color: #555; text-decoration: none; display: inline-flex; align-items: center; }
+        .btn-save { padding: 10px 24px; background: #6c47ff; color: white; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; font-weight: 500; }
+        .btn-save:hover { background: #5a38e0; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz Assistant</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}" class="active">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit"
+                    style="width:100%;padding:10px 12px;background:none;border:none;
+                   text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;
+                   border-radius:10px;display:flex;align-items:center;gap:10px">
+                ← Deconectează-te
+            </button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Dezvoltat pentru antreprenori</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h1>Editare Comandă</h1>
+                <p>Modifică informațiile comenzii</p>
+            </div>
+            <span class="badge-id" th:text="'#' + ${comanda.id}">#1</span>
+        </div>
+
+        <form th:action="@{/comenzi/edit/{id}(id=${comanda.id})}" method="post">
+
+            <!-- Date client -->
+            <div class="section-title">👤 Date Client</div>
+            <div class="form-group">
+                <label>Nume Client *</label>
+                <input type="text" name="numeClient"
+                       th:value="${comanda.numeClient}" required/>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Telefon *</label>
+                    <input type="text" name="telefon"
+                           th:value="${comanda.telefon}" required/>
+                </div>
+                <div class="form-group">
+                    <label>Adresă Livrare *</label>
+                    <input type="text" name="adresa"
+                           th:value="${comanda.adresa}" required/>
+                </div>
+            </div>
+
+            <!-- Sursă și plată -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Sursă Platformă</label>
+                    <select name="sursa">
+                        <option value="INSTAGRAM"
+                                th:selected="${comanda.sursa == 'INSTAGRAM'}">Instagram</option>
+                        <option value="TIKTOK"
+                                th:selected="${comanda.sursa == 'TIKTOK'}">TikTok</option>
+                        <option value="FACEBOOK"
+                                th:selected="${comanda.sursa == 'FACEBOOK'}">Facebook</option>
+                        <option value="ALTUL"
+                                th:selected="${comanda.sursa == 'ALTUL'}">Altul</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status Plată</label>
+                    <select name="statusPlata">
+                        <option value="RAMBURS"
+                                th:selected="${comanda.statusPlata?.name() == 'RAMBURS'}">
+                            🟠 Ramburs (la livrare)
+                        </option>
+                        <option value="PLATIT_ONLINE"
+                                th:selected="${comanda.statusPlata?.name() == 'PLATIT_ONLINE'}">
+                            🟢 Plătit online (card/transfer)
+                        </option>
+                        <option value="PLATIT_RAMBURS"
+                                th:selected="${comanda.statusPlata?.name() == 'PLATIT_RAMBURS'}">
+                            ✅ Ramburs confirmat
+                        </option>
+                        <option value="ANULAT"
+                                th:selected="${comanda.statusPlata?.name() == 'ANULAT'}">
+                            ❌ Anulat
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Produse -->
+            <div class="section-title" style="margin-top:20px">📦 Produse</div>
+            <div class="produse-header">
+                <span>ID Produs</span>
+                <span>Cantitate</span>
+                <span>Preț/buc</span>
+                <span>TVA</span>
+                <span></span>
+            </div>
+            <div id="produseContainer">
+                <div th:each="item : ${comanda.items}" class="produs-row"
+                     th:attr="data-idx=${itemStat.index}">
+                    <input type="text" name="idProdus"
+                           th:value="${item.idProdus}" placeholder="ex: PRD-001"/>
+                    <input type="number" name="cantitate"
+                           th:value="${item.cantitate}" min="1" oninput="recalculeaza()"/>
+                    <input type="number" name="pretUnitar" step="0.01"
+                           th:value="${item.pretUnitarOriginal != null ? item.pretUnitarOriginal : item.pretUnitar}"
+                           placeholder="0.00" oninput="recalculeaza()"/>
+                    <div>
+                        <div class="tva-group">
+                            <button type="button" class="tva-opt"
+                                    th:classappend="${item.cotaTVA?.name() == 'TVA_0'} ? ' sel' : ''"
+                                    onclick="selectTVA(this, 'TVA_0')">0%</button>
+                            <button type="button" class="tva-opt"
+                                    th:classappend="${item.cotaTVA?.name() == 'TVA_9'} ? ' sel' : ''"
+                                    onclick="selectTVA(this, 'TVA_9')">9%</button>
+                            <button type="button" class="tva-opt"
+                                    th:classappend="${item.cotaTVA?.name() == 'TVA_11'} ? ' sel' : ''"
+                                    onclick="selectTVA(this, 'TVA_11')">11%</button>
+                            <button type="button" class="tva-opt"
+                                    th:classappend="${item.cotaTVA?.name() == 'TVA_21'} ? ' sel' : ''"
+                                    onclick="selectTVA(this, 'TVA_21')">21%</button>
+                        </div>
+                        <input type="hidden" name="cotaTVA"
+                               th:value="${item.cotaTVA}"/>
+                    </div>
+                    <button type="button" onclick="stergeRand(this)"
+                            style="width:36px;height:36px;background:#fcebeb;color:#A32D2D;border:none;border-radius:8px;cursor:pointer;font-size:16px">✕</button>
+                </div>
+            </div>
+
+            <button type="button" onclick="adaugaRand()"
+                    style="width:100%;padding:9px;border:1.5px dashed #d0c0ff;border-radius:8px;background:none;color:#6c47ff;font-size:13px;cursor:pointer;margin-bottom:8px">
+                + Adaugă Produs
+            </button>
+
+            <div class="total-line">
+                Total: <span id="totalCalculat">0.00</span> RON
+            </div>
+
+            <!-- Tracking -->
+            <div class="tracking-box" style="margin-top:20px">
+                <div class="tracking-title">📊 Tracking Marketing</div>
+                <div class="form-group">
+                    <label>Cod Promoțional / Tag Influencer</label>
+                    <input type="text" name="codPromotional" id="codPromoInput"
+                           th:value="${comanda.codPromotional}"
+                           oninput="verificaCodPromoManual(this.value)"
+                           placeholder="ex: ANA10, PRIMAVARA20"/>
+                    <div id="codPromoFeedback" style="font-size:12px;margin-top:6px;display:none"></div>
+                </div>
+                <div class="form-group" style="margin-bottom:0">
+                    <label>Campanie Atribuită</label>
+                    <select name="campanie">
+                        <option value="">— Fără campanie —</option>
+                        <option th:each="c : ${campanii}" th:value="${c.nume}"
+                                th:selected="${c.nume == comanda.campanie}"
+                                th:text="|${c.nume} (${#strings.toLowerCase(c.status)})|"></option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Note (opțional)</label>
+                <textarea name="note" rows="2"
+                          th:text="${comanda.note}"
+                          placeholder="Note adiționale..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <a th:href="@{/comenzi}" class="btn-cancel">← Anulează</a>
+                <button type="submit" class="btn-save" id="btnSalveazaComanda">Salvează Modificările</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const TVA_MAP = { 'TVA_0': 0, 'TVA_9': 0.09, 'TVA_11': 0.11, 'TVA_21': 0.21 };
+    const TVA_LABELS = ['TVA_0','TVA_9','TVA_11','TVA_21'];
+    const TVA_DISPLAY = ['0%','9%','11%','21%'];
+
+    /* ══ VALIDARE LIVE COD PROMOȚIONAL (identic cu pagina de adăugare comenzi) ══ */
+    let _codPromoTimeout = null;
+    function verificaCodPromoManual(valoare, feedbackId, btnId) {
+        feedbackId = feedbackId || 'codPromoFeedback';
+        btnId      = btnId      || 'btnSalveazaComanda';
+        clearTimeout(_codPromoTimeout);
+        const feedback = document.getElementById(feedbackId);
+        const btn      = document.getElementById(btnId);
+        const cod = (valoare || '').trim();
+
+        if (!cod) {
+            feedback.style.display = 'none';
+            if (btn) btn.disabled = false;
+            return;
+        }
+
+        feedback.style.display = 'block';
+        feedback.style.color = '#888';
+        feedback.textContent = 'Se verifică codul...';
+        if (btn) btn.disabled = true;
+
+        _codPromoTimeout = setTimeout(function() {
+            fetch('/analiza-marketing/cod-promo/verifica?cod=' + encodeURIComponent(cod))
+                .then(r => r.json())
+                .then(function(data) {
+                    if (!data.gasit) {
+                        feedback.style.color = '#A32D2D';
+                        feedback.innerHTML = '⚠ Acest cod nu corespunde niciunei campanii înregistrate. Corectează codul sau golește câmpul pentru a salva fără atribuire.';
+                        if (btn) btn.disabled = true;
+                        return;
+                    }
+                    if (btn) btn.disabled = false;
+                    if (data.areReducere) {
+                        const unitate = data.tipReducere === 'PROCENT' ? '%' : ' RON/buc';
+                        const scop = data.aplicabilitate === 'PRODUSE_SELECTATE' ? 'pe produsele selectate' : 'pe toate produsele';
+                        feedback.style.color = '#3B6D11';
+                        feedback.innerHTML = '✓ Campanie: <strong>' + data.numeCampanie + '</strong> — reducere ' +
+                            data.valoareReducere + unitate + ' ' + scop + ' (se aplică automat).';
+                    } else {
+                        feedback.style.color = '#3B6D11';
+                        feedback.innerHTML = '✓ Campanie: <strong>' + data.numeCampanie + '</strong> (fără reducere asociată).';
+                    }
+                })
+                .catch(function() {
+                    feedback.style.color = '#888';
+                    feedback.textContent = 'Nu am putut verifica codul (eroare conexiune).';
+                    if (btn) btn.disabled = false;
+                });
+        }, 400);
+    }
+    // Verifică automat codul deja existent la încărcarea paginii de editare.
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('codPromoInput');
+        if (input && input.value.trim()) verificaCodPromoManual(input.value);
+    });
+
+    function selectTVA(btn, val) {
+        const grup = btn.closest('.tva-group');
+        grup.querySelectorAll('.tva-opt').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        grup.nextElementSibling.value = val;
+        recalculeaza();
+    }
+
+    function adaugaRand() {
+        const container = document.getElementById('produseContainer');
+        const rand = document.createElement('div');
+        rand.className = 'produs-row';
+        rand.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr 1.8fr 36px;gap:8px;align-items:center;margin-bottom:8px';
+        rand.innerHTML = `
+            <input type="text" name="idProdus" placeholder="ex: PRD-001"
+                   style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"/>
+            <input type="number" name="cantitate" value="1" min="1"
+                   style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"
+                   oninput="recalculeaza()"/>
+            <input type="number" name="pretUnitar" step="0.01" placeholder="0.00"
+                   style="padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%"
+                   oninput="recalculeaza()"/>
+            <div>
+                <div class="tva-group">
+                    <button type="button" class="tva-opt" onclick="selectTVA(this,'TVA_0')">0%</button>
+                    <button type="button" class="tva-opt" onclick="selectTVA(this,'TVA_9')">9%</button>
+                    <button type="button" class="tva-opt" onclick="selectTVA(this,'TVA_11')">11%</button>
+                    <button type="button" class="tva-opt sel" onclick="selectTVA(this,'TVA_21')">21%</button>
+                </div>
+                <input type="hidden" name="cotaTVA" value="TVA_21"/>
+            </div>
+            <button type="button" onclick="stergeRand(this)"
+                    style="width:36px;height:36px;background:#fcebeb;color:#A32D2D;border:none;border-radius:8px;cursor:pointer;font-size:16px">✕</button>
+        `;
+        container.appendChild(rand);
+        recalculeaza();
+    }
+
+    function stergeRand(btn) {
+        btn.closest('.produs-row').remove();
+        recalculeaza();
+    }
+
+    function recalculeaza() {
+        let total = 0;
+        document.querySelectorAll('.produs-row').forEach(rand => {
+            const cant = parseFloat(rand.querySelector('[name=cantitate]')?.value) || 0;
+            const pret = parseFloat(rand.querySelector('[name=pretUnitar]')?.value) || 0;
+            const tvaKey = rand.querySelector('[name=cotaTVA]')?.value || 'TVA_21';
+            total += cant * pret * (1 + (TVA_MAP[tvaKey] || 0));
+        });
+        document.getElementById('totalCalculat').textContent = total.toFixed(2);
+    }
+
+    // Calculează totalul la încărcare
+    recalculeaza();
+</script>
+
+</body>
+</html>

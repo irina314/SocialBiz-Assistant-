@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Tracking Influenceri — SocialBiz</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:white;height:100vh;position:fixed;display:flex;flex-direction:column;padding:24px 16px;border-right:1px solid #eee;z-index:10}
+        .sidebar-brand h2{color:#6c47ff;font-size:16px;font-weight:700}
+        .sidebar-brand p{font-size:12px;color:#aaa;margin-top:2px}
+        .sidebar nav{margin-top:28px;flex:1;overflow-y:auto}
+        .sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;text-decoration:none;color:#555;border-radius:10px;margin-bottom:4px;font-size:14px}
+        .sidebar nav a:hover{background:#f5f0ff;color:#6c47ff}
+        .sidebar nav a.active{background:#f0ebff;color:#6c47ff;font-weight:500}
+        .sidebar-footer{background:#6c47ff;border-radius:10px;padding:12px;color:white;font-size:12px;margin-top:16px}
+        .main{margin-left:220px;padding:32px;flex:1;max-width:calc(100vw - 220px)}
+        /* Header */
+        .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+        .page-header h1{font-size:24px;font-weight:600;color:#1a1a1a}
+        .page-header p{color:#888;font-size:14px;margin-top:4px}
+        .btn-primary{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:#6c47ff;color:white;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-weight:500;text-decoration:none}
+        .btn-primary:hover{background:#5a38e0}
+        /* KPI */
+        .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+        .kpi{background:white;border-radius:12px;padding:16px 18px;border:1px solid #eee;position:relative;overflow:hidden}
+        .kpi-icon{position:absolute;right:14px;top:14px;font-size:26px;opacity:.12}
+        .kpi-label{font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+        .kpi-value{font-size:22px;font-weight:700;line-height:1;margin-bottom:3px}
+        .kpi-sub{font-size:11px;color:#aaa}
+        /* Explainer box */
+        .explainer{background:linear-gradient(135deg,#f5f0ff,#ede8ff);border-radius:14px;padding:16px 20px;margin-bottom:20px;border:1px solid #e0d8ff;display:flex;align-items:flex-start;gap:14px}
+        .explainer-icon{font-size:28px;flex-shrink:0}
+        .explainer-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
+        .explainer-text{font-size:13px;color:#555;line-height:1.5}
+        .explainer-steps{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+        .step{display:flex;align-items:center;gap:8px;font-size:12px;color:#555}
+        .step-num{width:22px;height:22px;background:#6c47ff;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+        /* Cards grid */
+        .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+        .inf-card{background:white;border-radius:14px;border:1px solid #eee;overflow:hidden;transition:box-shadow .15s}
+        .inf-card:hover{box-shadow:0 4px 20px rgba(108,71,255,.1)}
+        .inf-card.inactiv{opacity:.65;border-style:dashed}
+        /* Card header */
+        .card-head{padding:16px 18px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid #f5f5f5}
+        .avatar{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:white;flex-shrink:0;background:linear-gradient(135deg,#6c47ff,#9b7fff)}
+        .head-info{flex:1;min-width:0}
+        .inf-name{font-size:15px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .inf-handle{font-size:12px;color:#aaa;margin-top:1px}
+        .plat-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;display:inline-block;margin-top:4px}
+        .st-badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+        .st-activ{background:#d4edda;color:#155724}
+        .st-inactiv{background:#f8d7da;color:#721c24}
+        /* Cod promo highlight */
+        .cod-box{margin:14px 18px;background:#f5f0ff;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border:1px dashed #c4b0ff}
+        .cod-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+        .cod-value{font-size:18px;font-weight:800;color:#6c47ff;letter-spacing:2px}
+        .cod-copy{background:white;border:1px solid #c4b0ff;color:#6c47ff;padding:5px 10px;border-radius:7px;font-size:12px;cursor:pointer;font-weight:500}
+        .cod-copy:hover{background:#6c47ff;color:white}
+        /* Metrici */
+        .metrici{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#f5f5f5;border-top:1px solid #f5f5f5;border-bottom:1px solid #f5f5f5}
+        .metric{background:white;padding:12px 14px;text-align:center}
+        .metric-label{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+        .metric-value{font-size:16px;font-weight:700}
+        .metric-value.green{color:#1D9E75}
+        .metric-value.purple{color:#6c47ff}
+        .metric-value.orange{color:#f5a623}
+        /* Comision row */
+        .comision-row{padding:10px 18px;display:flex;align-items:center;justify-content:space-between;background:#fafafa;border-bottom:1px solid #f5f5f5}
+        .comision-label{font-size:12px;color:#888}
+        .comision-value{font-size:13px;font-weight:600;color:#1D9E75}
+        /* Card footer actions */
+        .card-actions{display:flex;gap:8px;padding:12px 16px;justify-content:flex-end}
+        .btn-edit{padding:6px 14px;border-radius:8px;font-size:12px;background:#f0ebff;color:#6c47ff;border:none;cursor:pointer;font-weight:500}
+        .btn-toggle{padding:6px 14px;border-radius:8px;font-size:12px;border:1px solid #e5e5e5;background:white;color:#555;cursor:pointer}
+        .btn-del{padding:6px 12px;border-radius:8px;font-size:12px;background:#fcebeb;color:#A32D2D;border:none;cursor:pointer}
+        /* Contact row */
+        .contact-row{padding:10px 18px 4px;display:flex;gap:10px;flex-wrap:wrap}
+        .contact-chip{display:flex;align-items:center;gap:5px;font-size:12px;color:#555;padding:4px 10px;background:#f7f7f7;border-radius:20px}
+        .contact-chip a{color:#555;text-decoration:none}
+        .contact-chip a:hover{color:#6c47ff}
+        /* Note */
+        .note-row{padding:6px 18px 12px;font-size:12px;color:#aaa;font-style:italic}
+        /* Zero state */
+        .empty{text-align:center;padding:80px 20px;background:white;border-radius:14px;border:1px solid #eee;color:#aaa}
+        .empty-icon{font-size:48px;opacity:.25;margin-bottom:12px}
+        /* Toolbar */
+        .toolbar{display:flex;gap:10px;margin-bottom:18px;align-items:center}
+        .search-box{flex:1;position:relative}
+        .search-box input{width:100%;padding:9px 14px 9px 36px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:white;outline:none}
+        .search-box input:focus{border-color:#6c47ff}
+        .s-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px}
+        .filter-btn{padding:8px 14px;border:1px solid #e5e5e5;border-radius:8px;background:white;font-size:13px;cursor:pointer;color:#555}
+        .filter-btn.active{background:#6c47ff;color:white;border-color:#6c47ff}
+        /* Modal */
+        .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+        .overlay.open{display:flex}
+        .modal{background:white;border-radius:16px;width:520px;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,.18)}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+        .modal-title{font-size:20px;font-weight:600}
+        .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#aaa}
+        .form-group{margin-bottom:14px}
+        .form-group label{display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;outline:none;background:#fafafa;font-family:inherit}
+        .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#6c47ff;background:white}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .form-hint{font-size:11px;color:#aaa;margin-top:4px}
+        .cod-preview{background:#f5f0ff;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:700;color:#6c47ff;letter-spacing:2px;margin-top:6px;display:inline-block}
+        .form-section{font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding-bottom:6px;border-bottom:1px solid #f0f0f0;margin:18px 0 12px}
+        .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid #f0f0f0}
+        .btn-cancel{padding:9px 20px;border:1px solid #e5e5e5;border-radius:9px;background:white;font-size:13px;cursor:pointer;color:#555}
+        .btn-save{padding:9px 22px;background:#6c47ff;color:white;border:none;border-radius:9px;font-size:13px;cursor:pointer;font-weight:500}
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}" class="active">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit" style="width:100%;padding:10px 12px;background:none;border:none;text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;border-radius:10px;display:flex;align-items:center;gap:10px">← Deconectează-te</button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Platforma ta de vânzări</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+
+    <div class="page-header">
+        <div>
+            <h1>🌟 Tracking Influenceri</h1>
+            <p>Măsoară exact ce vânzări aduce fiecare colaborare</p>
+        </div>
+        <button class="btn-primary"
+                onclick="document.getElementById('modalAdauga').classList.add('open')">
+            + Adaugă Influencer
+        </button>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+        <div class="kpi" style="border-left:4px solid #6c47ff">
+            <div class="kpi-icon">🌟</div>
+            <div class="kpi-label">Total Influenceri</div>
+            <div class="kpi-value" style="color:#6c47ff" th:text="${totalInfluenceri}">0</div>
+            <div class="kpi-sub" th:text="${nrActivi} + ' activi'">0 activi</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #1D9E75">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-label">Venit Generat</div>
+            <div class="kpi-value" style="color:#1D9E75;font-size:18px"
+                 th:text="${venitTotal} + ' RON'">0 RON</div>
+            <div class="kpi-sub">din comenzi cu cod promo</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #378ADD">
+            <div class="kpi-icon">📦</div>
+            <div class="kpi-label">Comenzi Generate</div>
+            <div class="kpi-value" style="color:#378ADD" th:text="${comenziTotal}">0</div>
+            <div class="kpi-sub">prin coduri promoționale</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #f5a623">
+            <div class="kpi-icon">🤝</div>
+            <div class="kpi-label">Comision Datorat</div>
+            <div class="kpi-value" style="color:#f5a623;font-size:18px"
+                 th:text="${comisionTotal} + ' RON'">0 RON</div>
+            <div class="kpi-sub">din colaborări cu % comision</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #E24B4A">
+            <div class="kpi-icon">📊</div>
+            <div class="kpi-label">ROI Colaborări</div>
+            <div class="kpi-value" style="color:#E24B4A;font-size:16px"
+                 th:text="${#strings.isEmpty(venitTotal) or venitTotal == '0.00'} ? '—' : 'Activ'">—</div>
+            <div class="kpi-sub">venit vs cost total</div>
+        </div>
+    </div>
+
+    <!-- Cum funcționează — pentru utilizatori non-tehnici -->
+    <div class="explainer">
+        <div class="explainer-icon">💡</div>
+        <div>
+            <div class="explainer-title">Cum funcționează tracking-ul?</div>
+            <div class="explainer-text">
+                Fiecare influencer primește un <strong>cod unic</strong> (ex: MARIA20).
+                Când clientul plasează o comandă și scrie acel cod, sistemul îl asociază automat
+                cu influencerul respectiv și calculează vânzările generate.
+            </div>
+            <div class="explainer-steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    Adaugi influencerul cu un cod unic
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    Influencerul promovează codul la audiența lui
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    Clientul scrie codul la comandă (Smart Input / manual)
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    Sistemul calculează automat vânzările și comisionul
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="search-box">
+            <span class="s-icon">🔍</span>
+            <input type="text" placeholder="Caută după nume, cod sau platformă..."
+                   oninput="cauta(this.value)"/>
+        </div>
+        <button class="filter-btn active" onclick="filtru('toti',this)">Toți</button>
+        <button class="filter-btn" onclick="filtru('activ',this)">Activi</button>
+        <button class="filter-btn" onclick="filtru('inactiv',this)">Inactivi</button>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty" th:if="${#lists.isEmpty(stats)}">
+        <div class="empty-icon">🌟</div>
+        <p style="font-size:15px;font-weight:500;color:#555;margin-bottom:8px">
+            Niciun influencer adăugat încă
+        </p>
+        <p style="font-size:13px;margin-bottom:20px">
+            Adaugă primul influencer și generează-i un cod promoțional unic
+        </p>
+        <button class="btn-primary" style="margin:0 auto"
+                onclick="document.getElementById('modalAdauga').classList.add('open')">
+            + Primul Influencer
+        </button>
+    </div>
+
+    <!-- Cards -->
+    <div class="cards-grid" id="cardsGrid">
+        <div th:each="s : ${stats}"
+             class="inf-card"
+             th:classappend="${s.influencer.status.name() == 'INACTIV'} ? ' inactiv'"
+             th:attr="data-status=${s.influencer.status.name()},
+                      data-search=${s.influencer.nume
+                          + ' ' + (s.influencer.codPromotional != null ? s.influencer.codPromotional : '')
+                          + ' ' + (s.influencer.platforma != null ? s.influencer.platforma : '')}">
+
+            <!-- Card head -->
+            <div class="card-head">
+                <div class="avatar"
+                     th:text="${#strings.substring(s.influencer.nume,0,1).toUpperCase()}">I</div>
+                <div class="head-info">
+                    <div class="inf-name" th:text="${s.influencer.nume}">Influencer</div>
+                    <div class="inf-handle"
+                         th:text="${s.influencer.username != null ? '@' + s.influencer.username : ''}">—</div>
+                    <span class="plat-badge"
+                          th:if="${s.influencer.platforma != null}"
+                          th:style="'background:' + ${
+                              s.influencer.platforma == 'Instagram' ? '#fce4ec' :
+                              s.influencer.platforma == 'TikTok'    ? '#e8e8e8' :
+                              s.influencer.platforma == 'Facebook'  ? '#e3f2fd' :
+                              s.influencer.platforma == 'YouTube'   ? '#ffebee' : '#f0ebff'
+                          } + ';color:' + ${
+                              s.influencer.platforma == 'Instagram' ? '#c2185b' :
+                              s.influencer.platforma == 'TikTok'    ? '#111'    :
+                              s.influencer.platforma == 'Facebook'  ? '#1565c0' :
+                              s.influencer.platforma == 'YouTube'   ? '#c62828' : '#6c47ff'
+                          }"
+                          th:text="${s.platformaLabel}">—</span>
+                </div>
+                <span class="st-badge"
+                      th:classappend="${s.influencer.status.name() == 'ACTIV'} ? ' st-activ' : ' st-inactiv'"
+                      th:text="${s.influencer.status.name() == 'ACTIV'} ? 'Activ' : 'Inactiv'">—</span>
+            </div>
+
+            <!-- Cod promoțional -->
+            <div class="cod-box">
+                <div>
+                    <div class="cod-label">Cod promoțional unic</div>
+                    <div class="cod-value"
+                         th:text="${s.influencer.codPromotional != null ? s.influencer.codPromotional : '—'}">—</div>
+                </div>
+                <button class="cod-copy"
+                        th:onclick="'copiazaCod(\'' + ${s.influencer.codPromotional} + '\', this)'"
+                        th:if="${s.influencer.codPromotional != null}">
+                    📋 Copiază
+                </button>
+            </div>
+
+            <!-- Metrici -->
+            <div class="metrici">
+                <div class="metric">
+                    <div class="metric-label">Comenzi</div>
+                    <div class="metric-value purple" th:text="${s.nrComenzi}">0</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Venit Total</div>
+                    <div class="metric-value green"
+                         th:text="${#numbers.formatDecimal(s.venitTotal,1,2)} + ' RON'">0</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Val. Medie / Cmd</div>
+                    <div class="metric-value"
+                         th:text="${#numbers.formatDecimal(s.valoareMedieComanda,1,2)} + ' RON'">0</div>
+                </div>
+            </div>
+
+            <!-- Comision -->
+            <div class="comision-row" th:if="${s.influencer.comisionProcent != null and s.influencer.comisionProcent > 0}">
+                <span class="comision-label">
+                    Comision (<span th:text="${s.influencer.comisionProcent}">0</span>%)
+                </span>
+                <span class="comision-value"
+                      th:text="${#numbers.formatDecimal(s.comisionDatorat,1,2)} + ' RON de plătit'">0</span>
+            </div>
+
+            <!-- Contact -->
+            <div class="contact-row">
+                <div class="contact-chip" th:if="${s.influencer.telefon != null and !s.influencer.telefon.isBlank()}">
+                    📞 <a th:href="'tel:' + ${s.influencer.telefon}" th:text="${s.influencer.telefon}">—</a>
+                </div>
+                <div class="contact-chip" th:if="${s.influencer.email != null and !s.influencer.email.isBlank()}">
+                    ✉️ <a th:href="'mailto:' + ${s.influencer.email}" th:text="${s.influencer.email}">—</a>
+                </div>
+            </div>
+
+            <!-- Note -->
+            <div class="note-row" th:if="${s.influencer.note != null and !s.influencer.note.isBlank()}"
+                 th:text="${s.influencer.note}"></div>
+
+            <!-- Actiuni -->
+            <div class="card-actions">
+                <button class="btn-edit"
+                        th:onclick="'deschideEdit(' + ${s.influencer.id}
+                            + ',\'' + ${s.influencer.nume}
+                            + '\',\'' + ${s.influencer.platforma != null ? s.influencer.platforma : ''}
+                            + '\',\'' + ${s.influencer.username != null ? s.influencer.username : ''}
+                            + '\',\'' + ${s.influencer.codPromotional != null ? s.influencer.codPromotional : ''}
+                            + '\',\'' + ${s.influencer.telefon != null ? s.influencer.telefon : ''}
+                            + '\',\'' + ${s.influencer.email != null ? s.influencer.email : ''}
+                            + '\',' + ${s.influencer.comisionProcent != null ? s.influencer.comisionProcent : 0}
+                            + ',\'' + ${s.influencer.note != null ? s.influencer.note : ''}
+                            + '\')'">
+                    ✏️ Editează
+                </button>
+                <form th:action="@{/influenceri/toggle/{id}(id=${s.influencer.id})}" method="post" style="display:inline">
+                    <button type="submit" class="btn-toggle"
+                            th:text="${s.influencer.status.name() == 'ACTIV'} ? '⏸ Dezactivează' : '▶ Activează'">
+                    </button>
+                </form>
+                <form th:action="@{/influenceri/sterge/{id}(id=${s.influencer.id})}" method="post"
+                      style="display:inline" onsubmit="return confirm('Ștergi influencerul?')">
+                    <button type="submit" class="btn-del">🗑</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div><!-- end main -->
+
+<!-- Modal Adaugă -->
+<div class="overlay" id="modalAdauga">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">Influencer Nou</div>
+                <div style="font-size:13px;color:#aaa;margin-top:2px">Completează datele colaboratorului</div>
+            </div>
+            <button class="modal-close"
+                    onclick="document.getElementById('modalAdauga').classList.remove('open')">×</button>
+        </div>
+        <form th:action="@{/influenceri/adauga}" method="post">
+
+            <div class="form-section">Informații de bază</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nume *</label>
+                    <input type="text" name="nume" placeholder="ex: Maria Popescu" required
+                           oninput="genereazaCod(this.value)"/>
+                </div>
+                <div class="form-group">
+                    <label>Platformă</label>
+                    <select name="platforma">
+                        <option value="">— Selectează —</option>
+                        <option th:each="p : ${platforme}" th:value="${p}" th:text="${p}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Username / @handle</label>
+                <input type="text" name="username" placeholder="ex: maria.popescu (fără @)"/>
+            </div>
+
+            <div class="form-section">Cod Promoțional</div>
+            <div class="form-group">
+                <label>Cod unic de tracking *</label>
+                <input type="text" name="codPromotional" id="codInput"
+                       placeholder="ex: MARIA20, INFLUENCER10"
+                       required style="text-transform:uppercase"
+                       oninput="this.value = this.value.toUpperCase()"/>
+                <div class="form-hint">
+                    Codul va fi scris de clienți la comandă. Se salvează automat cu majuscule.
+                    Generare automată după nume ↑
+                </div>
+                <span id="codPreview" class="cod-preview" style="display:none"></span>
+            </div>
+
+            <div class="form-section">Contact &amp; Comision</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="tel" name="telefon" placeholder="07xx xxx xxx"/>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="email@exemplu.ro"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Comision (% din vânzări)</label>
+                <input type="number" name="comisionProcent" step="0.1" min="0" max="100"
+                       placeholder="ex: 10 (opțional — pentru calcul automat comision)"/>
+                <div class="form-hint">Lasă gol dacă nu ai un acord de comision cu acest influencer</div>
+            </div>
+            <div class="form-group">
+                <label>Note interne</label>
+                <textarea name="note" rows="2"
+                          placeholder="Termene colaborare, tip conținut agreat, observații..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel"
+                        onclick="document.getElementById('modalAdauga').classList.remove('open')">Anulează</button>
+                <button type="submit" class="btn-save">💾 Salvează</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Editează -->
+<div class="overlay" id="modalEdit">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Editează Influencer</div>
+            <button class="modal-close"
+                    onclick="document.getElementById('modalEdit').classList.remove('open')">×</button>
+        </div>
+        <form id="editForm" method="post">
+            <div class="form-section">Informații de bază</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nume *</label>
+                    <input type="text" name="nume" id="editNume" required/>
+                </div>
+                <div class="form-group">
+                    <label>Platformă</label>
+                    <select name="platforma" id="editPlatforma">
+                        <option value="">— Selectează —</option>
+                        <option th:each="p : ${platforme}" th:value="${p}" th:text="${p}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Username / @handle</label>
+                <input type="text" name="username" id="editUsername"/>
+            </div>
+            <div class="form-section">Cod Promoțional</div>
+            <div class="form-group">
+                <label>Cod unic *</label>
+                <input type="text" name="codPromotional" id="editCod" required
+                       style="text-transform:uppercase"
+                       oninput="this.value = this.value.toUpperCase()"/>
+            </div>
+            <div class="form-section">Contact &amp; Comision</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="tel" name="telefon" id="editTel"/>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" id="editEmail"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Comision (%)</label>
+                <input type="number" name="comisionProcent" id="editComision" step="0.1" min="0" max="100"/>
+            </div>
+            <div class="form-group">
+                <label>Note</label>
+                <textarea name="note" id="editNote" rows="2"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel"
+                        onclick="document.getElementById('modalEdit').classList.remove('open')">Anulează</button>
+                <button type="submit" class="btn-save">💾 Salvează</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    /* Filtrare */
+    var filtruActiv = 'toti';
+
+    function cauta(q) { aplicaFiltre(q); }
+
+    function filtru(tip, btn) {
+        filtruActiv = tip;
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        aplicaFiltre();
+    }
+
+    function aplicaFiltre(q) {
+        q = q || document.querySelector('.search-box input').value;
+        document.querySelectorAll('.inf-card').forEach(function(card) {
+            var st  = (card.dataset.status || '').toLowerCase();
+            var src = (card.dataset.search || '').toLowerCase();
+            var mS  = filtruActiv === 'toti' || st === filtruActiv;
+            var mQ  = !q || src.includes(q.toLowerCase());
+            card.style.display = (mS && mQ) ? '' : 'none';
+        });
+    }
+
+    /* Generare automată cod din nume */
+    function genereazaCod(nume) {
+        if (!nume) return;
+        var parts = nume.trim().toUpperCase().split(/\s+/);
+        var cod   = parts[0].substring(0, 6);
+        var input  = document.getElementById('codInput');
+        var preview = document.getElementById('codPreview');
+        if (!input.value) {
+            input.value     = cod;
+            preview.textContent = cod;
+            preview.style.display = 'inline-block';
+        }
+    }
+
+    /* Copiere cod */
+    function copiazaCod(cod, btn) {
+        if (!cod || cod === 'null') return;
+        navigator.clipboard.writeText(cod).then(function() {
+            btn.textContent = '✅ Copiat!';
+            setTimeout(function() { btn.textContent = '📋 Copiază'; }, 2000);
+        });
+    }
+
+    /* Deschide modal edit cu date pre-completate */
+    function deschideEdit(id, nume, platforma, username, cod, tel, email, comision, note) {
+        document.getElementById('editForm').action = '/influenceri/edit/' + id;
+        document.getElementById('editNume').value      = nume;
+        document.getElementById('editUsername').value  = username;
+        document.getElementById('editCod').value       = cod;
+        document.getElementById('editTel').value       = tel;
+        document.getElementById('editEmail').value     = email;
+        document.getElementById('editComision').value  = comision || '';
+        document.getElementById('editNote').value      = note;
+        var sel = document.getElementById('editPlatforma');
+        for (var i = 0; i < sel.options.length; i++) {
+            sel.options[i].selected = sel.options[i].value === platforma;
+        }
+        document.getElementById('modalEdit').classList.add('open');
+    }
+
+    /* Close on overlay click */
+    ['modalAdauga','modalEdit'].forEach(function(id) {
+        document.getElementById(id).addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('open');
+        });
+    });
+</script>
+</body>
+</html>

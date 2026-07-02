@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Smart Input - SocialBiz</title>
+    <meta th:name="_csrf" th:content="${_csrf.token}"/>
+    <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f7; display: flex; min-height: 100vh; }
+        .sidebar { width: 220px; background: white; height: 100vh; position: fixed; display: flex; flex-direction: column; padding: 24px 16px; border-right: 1px solid #eee; }
+        .sidebar-brand h2 { color: #6c47ff; font-size: 16px; font-weight: 700; }
+        .sidebar-brand p { font-size: 12px; color: #aaa; margin-top: 2px; }
+        .sidebar nav { margin-top: 28px; flex: 1; overflow-y: auto; }
+        .sidebar nav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; text-decoration: none; color: #555; border-radius: 10px; margin-bottom: 4px; font-size: 14px; }
+        .sidebar nav a:hover { background: #f5f0ff; color: #6c47ff; }
+        .sidebar nav a.active { background: #f0ebff; color: #6c47ff; font-weight: 500; }
+        .sidebar-footer { background: #6c47ff; border-radius: 10px; padding: 12px; color: white; font-size: 12px; margin-top: auto; }
+        .main { margin-left: 220px; padding: 32px; flex: 1; }
+        .page-header { margin-bottom: 28px; }
+        .page-header h1 { font-size: 24px; font-weight: 600; }
+        .page-header p { color: #888; font-size: 14px; margin-top: 4px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+        .card { background: white; border-radius: 16px; border: 1px solid #eee; padding: 24px; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+        .card-sub { font-size: 13px; color: #888; margin-bottom: 20px; }
+        #mesajText { width: 100%; height: 180px; padding: 14px; border: 1px solid #e5e5e5; border-radius: 12px; font-size: 14px; resize: vertical; background: #fafafa; outline: none; font-family: inherit; line-height: 1.6; }
+        #mesajText:focus { border-color: #6c47ff; background: white; }
+        .sursa-row { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+        .sursa-btn { padding: 8px 16px; border: 1.5px solid #e5e5e5; border-radius: 8px; background: #fafafa; font-size: 13px; cursor: pointer; color: #555; font-weight: 500; transition: all .12s; }
+        .sursa-btn:hover { border-color: #6c47ff; color: #6c47ff; }
+        .sursa-btn.sel { background: #6c47ff; color: white; border-color: #6c47ff; }
+        .btn-extrage { width: 100%; padding: 13px; background: #6c47ff; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s; }
+        .btn-extrage:hover { background: #5a38e0; }
+        .btn-extrage:disabled { background: #c0b0ff; cursor: not-allowed; }
+        .btn-extrage-doc { background: #f9f7ff; color: #6c47ff; border: 1.5px solid #6c47ff; margin-top: 10px; }
+        .btn-extrage-doc:hover { background: #f0ebff; }
+        .btn-extrage-doc:disabled { background: #f5f5f5; color: #aaa; border-color: #ddd; }
+        .rezultat-panel { display: none; }
+        .rezultat-panel.show { display: block; }
+        .confidenta-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }
+        .confidenta-MARE { background: #eaf3de; color: #3B6D11; }
+        .confidenta-MEDIE { background: #faeeda; color: #854F0B; }
+        .confidenta-MICA { background: #fcebeb; color: #A32D2D; }
+        .field-group { margin-bottom: 14px; }
+        .field-label { font-size: 12px; color: #888; font-weight: 500; margin-bottom: 4px; }
+        .field-value { padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 10px; font-size: 14px; background: #fafafa; min-height: 40px; }
+        .field-value.empty { color: #bbb; font-style: italic; }
+        .placeholder-panel { text-align: center; padding: 40px 20px; color: #ccc; }
+        .placeholder-panel p { font-size: 14px; margin-top: 10px; }
+        .loading { display: none; text-align: center; padding: 40px; }
+        .loading.show { display: block; }
+        .spinner { width: 36px; height: 36px; border: 3px solid #f0ebff; border-top-color: #6c47ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .eroare-panel { display: none; background: #fcebeb; border: 1px solid #f0c0c0; border-radius: 12px; padding: 16px; color: #A32D2D; font-size: 14px; }
+        .eroare-panel.show { display: block; }
+        .actiuni { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-creeaza { flex: 1; padding: 11px; background: #6c47ff; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn-creeaza:hover { background: #5a38e0; }
+        .btn-reset { padding: 11px 16px; border: 1px solid #e5e5e5; border-radius: 10px; background: white; font-size: 14px; cursor: pointer; color: #555; }
+        .exemplu-link { font-size: 13px; color: #6c47ff; cursor: pointer; text-decoration: underline; }
+        .tracking-box { background: #f9f7ff; border-radius: 12px; padding: 16px; margin-top: 16px; margin-bottom: 16px; }
+        .tracking-box-title { font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+        .plata-btn { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .12s; }
+        .field-input { width: 100%; padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 10px; font-size: 14px; background: white; outline: none; margin-top: 4px; font-family: inherit; transition: border-color .15s; }
+        .field-input:focus { border-color: #6c47ff; }
+        .tva-smart { padding: 5px 8px; border: 1.5px solid #e5e5e5; border-radius: 7px; background: #fafafa; font-size: 11px; cursor: pointer; color: #555; font-weight: 500; flex: 1; }
+        .tva-smart:hover { border-color: #6c47ff; color: #6c47ff; }
+        .tva-smart.sel { border-color: #6c47ff; background: #6c47ff; color: white; }
+
+        /* ── Product Picker ── */
+        .picker-wrap { position: relative; width: 100%; }
+        .picker-input { width: 100%; padding: 7px 10px; border: 1px solid #e5e5e5; border-radius: 8px;
+                        font-size: 13px; background: #fafafa; outline: none; font-family: inherit; }
+        .picker-input:focus { border-color: #6c47ff; background: white; }
+        .picker-dropdown { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+                           background: white; border: 1px solid #e0d8ff; border-radius: 10px;
+                           box-shadow: 0 8px 24px rgba(108,71,255,0.12); z-index: 999;
+                           max-height: 220px; overflow-y: auto; }
+        .picker-dropdown.open { display: block; }
+        .picker-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f7f7f7;
+                       display: flex; justify-content: space-between; align-items: center; }
+        .picker-item:last-child { border-bottom: none; }
+        .picker-item:hover { background: #f5f0ff; }
+        .picker-item-left { display: flex; flex-direction: column; gap: 2px; }
+        .picker-item-name { font-size: 13px; font-weight: 500; color: #1a1a1a; }
+        .picker-item-sku  { font-size: 11px; color: #aaa; }
+        .picker-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .picker-item-pret { font-size: 13px; font-weight: 600; color: #6c47ff; }
+        .picker-item-stoc { font-size: 11px; color: #aaa; }
+        .picker-empty { padding: 16px; text-align: center; color: #aaa; font-size: 13px; }
+        .picker-selected { background: #f0ebff !important; border-color: #6c47ff !important; color: #6c47ff; font-weight: 500; }
+
+        /* ── Produs invalid (negăsit în nomenclator) ── */
+        .picker-input.invalid-produs {
+            border-color: #E24B4A !important;
+            background: #fff5f5 !important;
+            color: #A32D2D;
+        }
+        .avertizare-produs {
+            display: none;
+            background: #fff8e6;
+            border: 1px solid #f5d78e;
+            border-radius: 0 0 8px 8px;
+            padding: 7px 10px;
+            font-size: 11px;
+            color: #854F0B;
+            margin-top: -2px;
+        }
+        .avertizare-produs.show { display: flex; align-items: center; gap: 8px; }
+        .btn-adauga-nomenclator {
+            flex-shrink: 0;
+            padding: 3px 9px;
+            background: #6c47ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-adauga-nomenclator:hover { background: #5a38e0; }
+
+        /* ── Modal overlay generic ── */
+        .si-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 500; align-items: center; justify-content: center; }
+        .si-overlay.open { display: flex; }
+        .si-modal { background: white; border-radius: 16px; padding: 28px; width: 540px; max-height: 90vh; overflow-y: auto; }
+        .si-modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .si-modal-header h2 { font-size: 20px; font-weight: 600; }
+        .si-modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #aaa; }
+
+        /* ── Modal eroare produse invalide ── */
+        #modalEroareProduse .si-modal { width: 420px; text-align: center; }
+        #modalEroareProduse .eroare-icon { font-size: 48px; margin-bottom: 12px; }
+        #modalEroareProduse p { font-size: 14px; color: #444; line-height: 1.6; }
+        #modalEroareProduse strong { color: #A32D2D; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz Assistant</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}" class="active">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit"
+                    style="width:100%;padding:10px 12px;background:none;border:none;
+                   text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;
+                   border-radius:10px;display:flex;align-items:center;gap:10px">
+                ← Deconectează-te
+            </button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Dezvoltat pentru antreprenori</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+    <div class="page-header">
+        <h1>Smart Input - Procesare Automată Comenzi</h1>
+        <p>Alege sursa și extrage datele automat folosind AI</p>
+    </div>
+
+    <div class="grid">
+
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="card-title">1. Extragere din Text</div>
+                <span class="exemplu-link" onclick="incarcaExemplu()">📋 Exemplu</span>
+            </div>
+            <div class="card-sub">Copiază mesajul clientului din Instagram/TikTok</div>
+
+            <textarea id="mesajText"
+                      placeholder="ex: Bună! Vreau să comand produsul X&#10;Numele meu e Maria Popescu&#10;Telefon: 0722334455&#10;Adresa: Str. Florilor nr. 23, București, sector 3&#10;Cantitate: 2"></textarea>
+
+            <div style="margin-top:16px">
+                <div style="font-size:13px;font-weight:500;color:#444;margin-bottom:8px">Sursă Comandă</div>
+                <div class="sursa-row">
+                    <button class="sursa-btn sel" onclick="selectSursa(this, 'INSTAGRAM')">Instagram</button>
+                    <button class="sursa-btn" onclick="selectSursa(this, 'TIKTOK')">TikTok</button>
+                    <button class="sursa-btn" onclick="selectSursa(this, 'FACEBOOK')">Facebook</button>
+                    <button class="sursa-btn" onclick="selectSursa(this, 'ALTUL')">Altul</button>
+                </div>
+                <input type="hidden" id="sursaSelectata" value="INSTAGRAM"/>
+            </div>
+
+            <button class="btn-extrage" id="btnExtrage" onclick="extrageDate()">
+                ✦ Extrage Date din Text
+            </button>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 28px 0;" />
+
+            <div class="card-title">2. Extragere din Imagine / PDF</div>
+            <div class="card-sub">Încarcă o factură, chitanță sau captură de ecran</div>
+
+            <input type="file" id="fileInputDocument" accept="image/png, image/jpeg, application/pdf"
+                   style="width: 100%; padding: 10px; border: 1.5px dashed #c0b0ff; border-radius: 12px; background: #f9f7ff; margin-bottom: 8px; font-size: 13px; cursor: pointer;" />
+
+            <button class="btn-extrage btn-extrage-doc" id="btnExtrageDoc" onclick="extrageDinDocument()">
+                📷 Procesează Imaginea / Documentul
+            </button>
+
+        </div>
+
+        <div class="card">
+            <div class="card-title">Date Extrase</div>
+            <div class="card-sub">Rezultatele extragerii automate cu AI</div>
+
+            <div class="placeholder-panel" id="placeholderPanel">
+                <div style="font-size:48px">🤖</div>
+                <p>Introdu mesajul sau încarcă un document pentru a extrage datele</p>
+            </div>
+
+            <div class="loading" id="loadingPanel">
+                <div class="spinner"></div>
+                <p style="font-size:14px;color:#888" id="loadingText">AI-ul procesează...</p>
+            </div>
+
+            <div class="eroare-panel" id="eroarePanel">
+                <strong>⚠ Eroare:</strong> <span id="eroareText"></span>
+            </div>
+
+            <div class="rezultat-panel" id="rezultatPanel">
+                <div id="confidentaBadge" class="confidenta-badge">✓ Încredere Mare</div>
+
+                <div class="field-group">
+                    <div class="field-label">Nume Client</div>
+                    <input type="text" class="field-input" id="r-nume" placeholder="Negăsit"/>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">Telefon</div>
+                    <input type="text" class="field-input" id="r-telefon" placeholder="Negăsit"/>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">Adresă</div>
+                    <input type="text" class="field-input" id="r-adresa" placeholder="Negăsit"/>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">Cod Poștal *</div>
+                    <input type="text" class="field-input" id="r-codPostal" placeholder="ex: 700123"/>
+                    <div style="font-size:11px;color:#888;margin-top:4px">Obligatoriu - necesar pentru generarea AWB-ului la curier.</div>
+                </div>
+                <div style="margin-bottom:16px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <div class="field-label" style="font-size:13px;font-weight:600;color:#444;margin:0;">Produse</div>
+                        <button type="button" onclick="adaugaRandSmart()" style="padding:4px 12px;background:#f0ebff;color:#6c47ff;border:none;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;">+ Adauga produs</button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.6fr 32px;gap:6px;margin-bottom:5px;">
+                        <span style="font-size:11px;color:#aaa;">Produs / ID</span>
+                        <span style="font-size:11px;color:#aaa;">Cantitate</span>
+                        <span style="font-size:11px;color:#aaa;">Pret/buc</span>
+                        <span style="font-size:11px;color:#aaa;">TVA</span>
+                        <span></span>
+                    </div>
+                    <div id="smartProduseContainer"></div>
+                    <div style="text-align:right;font-size:13px;font-weight:600;color:#6c47ff;margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0;">
+                        Total: <span id="r-totalCalculat">0.00</span> RON
+                    </div>
+                </div>
+            </div>
+            <div class="tracking-box">
+                <div class="tracking-box-title">💳 Detalii Plată &amp; Marketing</div>
+
+                <div style="margin-bottom:12px">
+                    <div class="field-label">Status Plată</div>
+                    <div style="display:flex;gap:8px;margin-top:6px">
+                        <button type="button" id="btn-ramburs" class="plata-btn"
+                                onclick="selectPlata(this, 'RAMBURS')"
+                                style="border:1.5px solid #EF9F27;background:#faeeda;color:#854F0B">
+                            🟠 Ramburs
+                        </button>
+                        <button type="button" id="btn-card" class="plata-btn"
+                                onclick="selectPlata(this, 'PLATIT_ONLINE')"
+                                style="border:1.5px solid #e5e5e5;background:#fafafa;color:#555">
+                            🟢 Card
+                        </button>
+                    </div>
+                    <input type="hidden" id="r-statusPlata" value="RAMBURS"/>
+                </div>
+
+                <div style="margin-bottom:12px">
+                    <div class="field-label">Sursă Comandă</div>
+                    <div class="field-value" id="r-sursa" style="margin-top:6px">—</div>
+                </div>
+
+                <div style="margin-bottom:12px;border:1.5px solid #EF9F27;background:#fffaf0;border-radius:10px;padding:10px 12px">
+                    <div class="field-label" style="display:flex;align-items:center;gap:6px;color:#854F0B">
+                        <span>⚠️ Cod Promoțional</span>
+                    </div>
+                    <input type="text" class="field-input" id="r-codPromo"
+                           oninput="verificaCodPromoManual(this.value, 'codPromoFeedback', 'btnCreeazaComanda')"
+                           placeholder="ex: ANA10, PRIMAVARA20"/>
+                    <div id="codPromoFeedback" style="font-size:12px;margin-top:6px;display:none"></div>
+                </div>
+
+                <div style="margin-bottom:12px">
+                    <div class="field-label">Campanie Atribuită <span style="color:#aaa;font-weight:400">(atribuire manuală)</span></div>
+                    <select class="field-input" id="r-campanie" style="margin-top:6px">
+                        <option value="">— Fără campanie —</option>
+                        <option th:each="c : ${campanii}" th:value="${c.nume}" th:text="|${c.nume} (${#strings.toLowerCase(c.status)})|"></option>
+                    </select>
+                    <div style="font-size:11px;color:#999;margin-top:4px">
+                        Nu se detectează automat din mesaj — alege manual campania înregistrată căreia îi atribui această comandă.
+                    </div>
+                </div>
+
+                <div>
+                    <div class="field-label">Note (opțional)</div>
+                    <textarea id="r-note" rows="2"
+                              placeholder="Observații despre comandă..."
+                              style="width:100%;padding:9px 14px;border:1px solid #e5e5e5;border-radius:10px;font-size:14px;background:white;outline:none;resize:vertical;margin-top:6px;font-family:inherit"></textarea>
+                </div>
+            </div>
+
+            <div class="actiuni">
+                <button class="btn-creeaza" id="btnCreeazaComanda" onclick="creeazaComanda()">+ Creează Comandă</button>
+                <button class="btn-reset" onclick="reset()">↺ Nou</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<form id="formComanda" th:action="@{/comenzi/adauga}" method="post" style="display:none">
+    <input type="hidden" name="numeClient" id="fc-nume"/>
+    <input type="hidden" name="telefon" id="fc-telefon"/>
+    <input type="hidden" name="adresa" id="fc-adresa"/>
+    <input type="hidden" name="codPostal" id="fc-codPostal"/>
+    <input type="hidden" name="sursa" id="fc-sursa"/>
+    <input type="hidden" name="statusPlata" id="fc-statusPlata"/>
+    <input type="hidden" name="codPromotional" id="fc-codPromo"/>
+    <input type="hidden" name="campanie" id="fc-campanie"/>
+    <input type="hidden" name="note" id="fc-note"/>
+    <div id="fc-produse-container"></div>
+    <input type="hidden" name="pretUnitar" id="fc-pretUnitar"/>
+    <input type="hidden" name="cotaTVA" id="fc-cotaTVA"/>
+</form>
+
+<script th:inline="none">
+    let dateExtrase = null;
+
+    /* ══ VALIDARE LIVE COD PROMOȚIONAL (identic cu paginile de comenzi) ══
+       Aici e cu atât mai important — codul nu vine din extragerea AI,
+       deci e nevoie de confirmare clară dacă utilizatorul l-a completat corect. */
+    let _codPromoTimeout = null;
+    function verificaCodPromoManual(valoare, feedbackId, btnId) {
+        feedbackId = feedbackId || 'codPromoFeedback';
+        btnId      = btnId      || 'btnCreeazaComanda';
+        clearTimeout(_codPromoTimeout);
+        const feedback = document.getElementById(feedbackId);
+        const btn      = document.getElementById(btnId);
+        const cod = (valoare || '').trim();
+
+        if (!cod) {
+            feedback.style.display = 'none';
+            if (btn) btn.disabled = false;
+            return;
+        }
+
+        feedback.style.display = 'block';
+        feedback.style.color = '#888';
+        feedback.textContent = 'Se verifică codul...';
+        if (btn) btn.disabled = true;
+
+        _codPromoTimeout = setTimeout(function() {
+            fetch('/analiza-marketing/cod-promo/verifica?cod=' + encodeURIComponent(cod))
+                .then(r => r.json())
+                .then(function(data) {
+                    if (!data.gasit) {
+                        feedback.style.color = '#A32D2D';
+                        feedback.innerHTML = '⚠ Acest cod nu corespunde niciunei campanii înregistrate. Corectează codul sau golește câmpul pentru a salva fără atribuire.';
+                        if (btn) btn.disabled = true;
+                        return;
+                    }
+                    if (btn) btn.disabled = false;
+                    if (data.areReducere) {
+                        const unitate = data.tipReducere === 'PROCENT' ? '%' : ' RON/buc';
+                        const scop = data.aplicabilitate === 'PRODUSE_SELECTATE' ? 'pe produsele selectate' : 'pe toate produsele';
+                        feedback.style.color = '#3B6D11';
+                        feedback.innerHTML = '✓ Campanie: <strong>' + data.numeCampanie + '</strong> — reducere ' +
+                            data.valoareReducere + unitate + ' ' + scop + ' (se aplică automat).';
+                    } else {
+                        feedback.style.color = '#3B6D11';
+                        feedback.innerHTML = '✓ Campanie: <strong>' + data.numeCampanie + '</strong> (fără reducere asociată).';
+                    }
+                })
+                .catch(function() {
+                    feedback.style.color = '#888';
+                    feedback.textContent = 'Nu am putut verifica codul (eroare conexiune).';
+                    if (btn) btn.disabled = false;
+                });
+        }, 400);
+    }
+
+    function selectSursa(btn, val) {
+        document.querySelectorAll('.sursa-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        document.getElementById('sursaSelectata').value = val;
+    }
+
+    function incarcaExemplu() {
+        document.getElementById('mesajText').value = 'Buna ziua! Vreau sa comand Tricoul Alb Premium. Numele meu este Ion Popescu, telefon 0722334455, adresa Str. Victoriei nr. 10, Bucuresti. Cantitate: 2. Cod promo: VARA20. Platesc cu cardul.';
+        extrageDate();
+    }
+
+    // Funcția existentă pentru Extragere din Text
+    async function extrageDate() {
+        const mesaj = document.getElementById('mesajText').value.trim();
+        if (!mesaj) { alert('Te rog introdu un mesaj!'); return; }
+
+        const sursa = document.getElementById('sursaSelectata').value;
+        const btn = document.getElementById('btnExtrage');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Se procesează...';
+
+        document.getElementById('placeholderPanel').style.display = 'none';
+        document.getElementById('loadingText').textContent = "AI-ul citește mesajul...";
+        document.getElementById('loadingPanel').classList.add('show');
+        document.getElementById('rezultatPanel').classList.remove('show');
+        document.getElementById('eroarePanel').classList.remove('show');
+
+        try {
+            const formData = new FormData();
+            formData.append('mesaj', mesaj);
+            formData.append('sursa', sursa);
+
+            // Adaugă CSRF token
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+            const headers = {};
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+
+            const response = await fetch('/smart-input/extrage', {
+                method: 'POST',
+                headers: headers,
+                body: formData
+            });
+
+            const data = await response.json();
+            document.getElementById('loadingPanel').classList.remove('show');
+
+            if (data.success) {
+                dateExtrase = data;
+                afiseazaRezultate(data);
+            } else {
+                document.getElementById('eroarePanel').classList.add('show');
+                document.getElementById('eroareText').textContent = data.eroare;
+            }
+        } catch (err) {
+            document.getElementById('loadingPanel').classList.remove('show');
+            document.getElementById('eroarePanel').classList.add('show');
+            document.getElementById('eroareText').textContent = 'Eroare de conexiune: ' + err.message;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '✦ Extrage Date din Text';
+        }
+    }
+
+    // NOU: Funcția pentru Extragere din Document (Imagine / PDF)
+    async function extrageDinDocument() {
+        const fileInput = document.getElementById('fileInputDocument');
+        const file = fileInput.files[0];
+
+        if (!file) { alert('Te rog selectează o imagine sau un PDF mai întâi!'); return; }
+
+        const btn = document.getElementById('btnExtrageDoc');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Se scanează documentul...';
+
+        document.getElementById('placeholderPanel').style.display = 'none';
+        document.getElementById('loadingText').textContent = "AI Vision analizează imaginea...";
+        document.getElementById('loadingPanel').classList.add('show');
+        document.getElementById('rezultatPanel').classList.remove('show');
+        document.getElementById('eroarePanel').classList.remove('show');
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Adaugă CSRF token
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+            const headers = {};
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+
+            const response = await fetch('/smart-input/extrage-document', {
+                method: 'POST',
+                headers: headers,
+                body: formData
+            });
+
+            const data = await response.json();
+            document.getElementById('loadingPanel').classList.remove('show');
+
+            if (data.success) {
+                dateExtrase = data;
+                // Refolosim aceeași funcție pentru a popula partea dreaptă!
+                afiseazaRezultate(data);
+            } else {
+                document.getElementById('eroarePanel').classList.add('show');
+                document.getElementById('eroareText').textContent = data.eroare;
+            }
+        } catch (err) {
+            document.getElementById('loadingPanel').classList.remove('show');
+            document.getElementById('eroarePanel').classList.add('show');
+            document.getElementById('eroareText').textContent = 'Eroare de conexiune: ' + err.message;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '📷 Procesează Imaginea / Documentul';
+        }
+    }
+
+    // Restul codului rămâne exact cum l-ai scris tu
+    function afiseazaRezultate(data) {
+        document.getElementById('rezultatPanel').classList.add('show');
+
+        const conf = data.confidenta || 'MEDIE';
+        const badge = document.getElementById('confidentaBadge');
+        badge.className = 'confidenta-badge confidenta-' + conf;
+        const labels = { 'MARE': '✓ Încredere Mare', 'MEDIE': '~ Încredere Medie', 'MICA': '⚠ Încredere Mică' };
+        badge.textContent = labels[conf] || conf;
+
+        document.getElementById('r-nume').value = data.numeClient || '';
+        document.getElementById('r-telefon').value = data.telefon || '';
+        document.getElementById('r-adresa').value = data.adresa || '';
+        document.getElementById('r-codPostal').value = data.codPostal || '';
+        var container = document.getElementById('smartProduseContainer');
+        container.innerHTML = '';
+        var produse = data.produse || [];
+        if (produse.length > 0) {
+            produse.forEach(function(p) { adaugaRandSmart(p.produs || '', p.cantitate || 1, p.cotaTVA || 'TVA_21'); });
+        } else if (data.produs) {
+            adaugaRandSmart(data.produs, data.cantitate || 1, data.cotaTVA || 'TVA_21');
+        } else {
+            adaugaRandSmart();
+        }
+        document.getElementById('r-codPromo').value = data.codPromotional || '';
+        verificaCodPromoManual(data.codPromotional || '', 'codPromoFeedback', 'btnCreeazaComanda');
+        document.getElementById('r-note').value = data.note || '';
+
+        // La extragerea din imagine, s-ar putea să nu avem o "sursă" selectată ca la text
+        const sursaActuala = document.getElementById('sursaSelectata').value;
+        document.getElementById('r-sursa').textContent = sursaActuala;
+
+        // Status plată automat
+        const statusPlata = data.statusPlata || 'RAMBURS';
+        document.getElementById('r-statusPlata').value = statusPlata;
+        selectPlata(
+            document.getElementById(statusPlata === 'PLATIT_ONLINE' ? 'btn-card' : 'btn-ramburs'),
+            statusPlata
+        );
+
+        recalculeazaSmart();
+
+        // Afișează categoria detectată
+        if (data.categorieDetectata) {
+            let catEl = document.getElementById('categorie-detectata');
+            if (!catEl) {
+                catEl = document.createElement('div');
+                catEl.id = 'categorie-detectata';
+                catEl.style.cssText = 'font-size:12px;color:#888;margin-top:6px;padding:4px 10px;background:#f5f5f5;border-radius:6px;display:inline-block';
+                document.getElementById('rezultatPanel').appendChild(catEl);
+            }
+            catEl.textContent = '🏷 Categorie detectată: ' + data.categorieDetectata;
+        }
+    }
+
+    function selectPlata(btn, val) {
+        document.getElementById('r-statusPlata').value = val;
+        const ramburs = document.getElementById('btn-ramburs');
+        const card = document.getElementById('btn-card');
+        ramburs.style.background = '#fafafa';
+        ramburs.style.borderColor = '#e5e5e5';
+        ramburs.style.color = '#555';
+        card.style.background = '#fafafa';
+        card.style.borderColor = '#e5e5e5';
+        card.style.color = '#555';
+        if (val === 'RAMBURS') {
+            ramburs.style.background = '#faeeda';
+            ramburs.style.borderColor = '#EF9F27';
+            ramburs.style.color = '#854F0B';
+        } else {
+            card.style.background = '#eaf3de';
+            card.style.borderColor = '#1D9E75';
+            card.style.color = '#3B6D11';
+        }
+    }
+
+    function creeazaComanda() {
+        const btnCreare = document.getElementById('btnCreeazaComanda');
+        if (btnCreare && btnCreare.disabled) {
+            alert('Codul promoțional introdus nu este valid. Corectează-l sau golește câmpul înainte de a salva comanda.');
+            return;
+        }
+        const nume = document.getElementById('r-nume').value.trim();
+        if (!nume) { alert('Numele clientului este obligatoriu!'); return; }
+
+        const codPostalVal = document.getElementById('r-codPostal').value.trim();
+        if (!codPostalVal) { alert('Codul poștal este obligatoriu - este necesar pentru generarea AWB-ului la curier!'); return; }
+
+        // ── Validare produse din nomenclator ──
+        var produseInvalide = 0;
+        document.querySelectorAll('.smart-produs-row').forEach(function(row) {
+            var validEl = row.querySelector('.sp-produs-valid');
+            var textEl  = row.querySelector('.picker-input');
+            var avertEl = row.querySelector('.avertizare-produs');
+            if (!textEl || !textEl.value.trim()) return; // rand gol — ignorat
+            if (!validEl || validEl.value !== 'true') {
+                produseInvalide++;
+                // Forțează vizual marcajul de invalid
+                if (textEl) textEl.classList.add('invalid-produs');
+                if (avertEl) avertEl.style.display = 'flex';
+            }
+        });
+
+        if (produseInvalide > 0) {
+            var titlu = produseInvalide === 1
+                ? 'Produs negăsit în nomenclator'
+                : 'Produse negăsite în nomenclator';
+            var mesaj = produseInvalide === 1
+                ? 'Produsul introdus nu se regăsește în nomenclatorul de produse. Verifică caseta de produs marcată cu roșu.'
+                : produseInvalide + ' produse introduse nu se regăsesc în nomenclatorul de produse. Verifică casetele de produs marcate cu roșu.';
+            document.getElementById('eroareTitlu').textContent = titlu;
+            document.getElementById('eroareMesaj').textContent = mesaj;
+            document.getElementById('modalEroareProduse').classList.add('open');
+            return;
+        }
+
+        document.getElementById('fc-nume').value = nume;
+        document.getElementById('fc-telefon').value = document.getElementById('r-telefon').value;
+        document.getElementById('fc-adresa').value = document.getElementById('r-adresa').value;
+        document.getElementById('fc-codPostal').value = codPostalVal;
+        document.getElementById('fc-sursa').value = document.getElementById('sursaSelectata').value;
+        document.getElementById('fc-statusPlata').value = document.getElementById('r-statusPlata').value;
+        document.getElementById('fc-codPromo').value = document.getElementById('r-codPromo').value;
+        document.getElementById('fc-campanie').value = document.getElementById('r-campanie').value.trim();
+        document.getElementById('fc-note').value = document.getElementById('r-note').value;
+        var fc = document.getElementById('fc-produse-container');
+        fc.innerHTML = '';
+        var hasProds = false;
+        document.querySelectorAll('.smart-produs-row').forEach(function(row) {
+            var skuEl = row.querySelector('.sp-produs-sku');
+            var pEl   = row.querySelector('.picker-input');
+            var produs = (skuEl && skuEl.value.trim()) ? skuEl.value.trim() : (pEl ? pEl.value.trim() : '');
+            if (!produs) return;
+            hasProds = true;
+            var cant = row.querySelector('.sp-cantitate').value || '1';
+            var pret = row.querySelector('.sp-pret').value || '0';
+            var tva  = row.querySelector('.sp-tva').value || 'TVA_21';
+            [['idProdus',produs],['cantitate',cant],['pretUnitar',pret],['cotaTVA',tva]].forEach(function(pair) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden'; inp.name = pair[0]; inp.value = pair[1];
+                fc.appendChild(inp);
+            });
+        });
+        if (!hasProds) { alert('Adaugă cel puțin un produs!'); return; }
+        document.getElementById('formComanda').submit();
+    }
+
+    function reset() {
+        dateExtrase = null;
+        document.getElementById('mesajText').value = '';
+        document.getElementById('fileInputDocument').value = '';
+        document.getElementById('placeholderPanel').style.display = 'block';
+        document.getElementById('rezultatPanel').classList.remove('show');
+        document.getElementById('eroarePanel').classList.remove('show');
+        document.getElementById('loadingPanel').classList.remove('show');
+    }
+
+    var TVA_MAP_SMART = { 'TVA_0': 0, 'TVA_9': 0.09, 'TVA_11': 0.11, 'TVA_21': 0.21 };
+    var TVA_OPTIONS_SMART = ['TVA_0','TVA_9','TVA_11','TVA_21'];
+    var TVA_LABELS_SMART  = ['0%','9%','11%','21%'];
+
+    function mk(tag, props, style) {
+        var el = document.createElement(tag);
+        for (var k in (props||{})) el[k] = props[k];
+        if (style) el.style.cssText = style;
+        return el;
+    }
+
+
+    /* ══ PRODUCT PICKER ══ */
+    let pickerTimeout = null;
+
+    // Target row pentru modalul de produs nou
+    var siTargetRow = null;
+
+    function creeazaPickerSmart() {
+        const wrap = document.createElement('div');
+        wrap.className = 'picker-wrap';
+        wrap.style.cssText = 'position:relative;width:100%;';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'picker-input sp-produs';
+        input.placeholder = '🔍 Caută produs (nume sau SKU)...';
+        input.autocomplete = 'off';
+
+        const hiddenSku = document.createElement('input');
+        hiddenSku.type  = 'hidden';
+        hiddenSku.className = 'sp-produs-sku';
+
+        const hiddenValid = document.createElement('input');
+        hiddenValid.type = 'hidden';
+        hiddenValid.className = 'sp-produs-valid';
+        hiddenValid.value = 'false';
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'picker-dropdown';
+
+        wrap.appendChild(input);
+        wrap.appendChild(hiddenSku);
+        wrap.appendChild(hiddenValid);
+        wrap.appendChild(dropdown);
+
+        input.addEventListener('input', function() {
+            hiddenSku.value = '';
+            hiddenValid.value = 'false';
+            // Resetează vizual
+            input.classList.remove('invalid-produs');
+            var av = wrap.parentNode && wrap.parentNode.querySelector('.avertizare-produs');
+            if (av) av.style.display = 'none';
+
+            clearTimeout(pickerTimeout);
+            const q = this.value;
+            const delay = arataASKU(q) ? 100 : 250;
+            pickerTimeout = setTimeout(() => smartCautaProduse(q, dropdown, input, hiddenSku, hiddenValid, wrap), delay);
+        });
+
+        input.addEventListener('focus', function() {
+            smartCautaProduse(this.value, dropdown, input, hiddenSku, hiddenValid, wrap);
+        });
+
+        input.addEventListener('blur', function() {
+            setTimeout(function() {
+                var av = wrap.parentNode && wrap.parentNode.querySelector('.avertizare-produs');
+                if (hiddenValid.value !== 'true' && input.value.trim().length >= 3 && av) {
+                    input.classList.add('invalid-produs');
+                    input.classList.remove('picker-selected');
+                    av.style.display = 'flex';
+                }
+                dropdown.classList.remove('open');
+            }, 300);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!wrap.contains(e.target)) dropdown.classList.remove('open');
+        }, true);
+
+        return wrap;
+    }
+
+    // Detecteaza daca un string arata a cod SKU (majuscule + cifre + cratime)
+    function arataASKU(q) {
+        return /^[A-Z0-9][A-Z0-9\-]{2,}$/i.test(q.trim());
+    }
+
+    function marcheazaInvalid(input, avertizare, invalid) {
+        if (invalid) {
+            input.classList.add('invalid-produs');
+            input.classList.remove('picker-selected');
+            avertizare.style.display = 'flex';
+        } else {
+            input.classList.remove('invalid-produs');
+            avertizare.style.display = 'none';
+        }
+    }
+
+    var UM_LABELS = {BUC:'buc',KG:'kg',L:'l',M:'m',PERECHE:'per.',SET:'set',PACHET:'pac.'};
+
+    function smartCautaProduse(q, dropdown, input, hiddenSku, hiddenValid, wrap) {
+        var qTrim = q.trim();
+
+        if (qTrim.length < 3) {
+            dropdown.innerHTML = '<div class="picker-empty" style="color:#aaa;font-size:12px;">Tasteaza minim 3 caractere...</div>';
+            dropdown.classList.add('open');
+            return;
+        }
+
+        fetch('/produse/search?q=' + encodeURIComponent(qTrim))
+            .then(r => r.json())
+            .then(produse => {
+                dropdown.innerHTML = '';
+                var row = wrap.closest('.smart-produs-row');
+                var av  = row && row.querySelector('.avertizare-produs');
+
+                if (!produse.length) {
+                    dropdown.classList.remove('open');
+                    hiddenSku.value   = '';
+                    hiddenValid.value = 'false';
+                    input.classList.add('invalid-produs');
+                    if (av) av.style.display = 'flex';
+                    return;
+                }
+
+                input.classList.remove('invalid-produs');
+                if (av) av.style.display = 'none';
+                produse.forEach(p => adaugaItemPicker(p, dropdown, input, hiddenSku, hiddenValid, wrap));
+
+                var addBtn = document.createElement('div');
+                addBtn.style.cssText = 'padding:10px 14px;font-size:13px;font-weight:500;color:#6c47ff;cursor:pointer;' +
+                    'border-top:1px solid #f0f0f0;display:flex;align-items:center;gap:8px;';
+                addBtn.innerHTML = '<span style="background:#6c47ff;color:white;border-radius:50%;width:20px;height:20px;' +
+                    'display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">+</span>' +
+                    'Adaugă produs nou în nomenclator';
+                addBtn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropdown.classList.remove('open');
+                    siDeschideProdusNou(wrap.closest('.smart-produs-row'), input.value);
+                });
+                dropdown.appendChild(addBtn);
+                dropdown.classList.add('open');
+            })
+            .catch(() => dropdown.classList.remove('open'));
+    }
+
+    function adaugaItemPicker(p, dropdown, input, hiddenSku, hiddenValid, wrap) {
+        var um = UM_LABELS[p.unitateMasura] || 'buc';
+        var item = document.createElement('div');
+        item.className = 'picker-item';
+        item.innerHTML =
+            '<div class="picker-item-left">' +
+                '<span class="picker-item-name">' + p.nume + '</span>' +
+                '<span class="picker-item-sku">SKU: ' + (p.codSKU || '—') + '</span>' +
+            '</div>' +
+            '<div class="picker-item-right">' +
+                '<span class="picker-item-pret">' + parseFloat(p.pret).toFixed(2) + ' RON/' + um + '</span>' +
+                '<span class="picker-item-stoc">Stoc: ' + p.stoc + ' ' + um + '</span>' +
+            '</div>';
+
+        item.addEventListener('click', function() {
+            input.value = p.nume + (p.codSKU ? ' [' + p.codSKU + ']' : '');
+            input.classList.add('picker-selected');
+            input.classList.remove('invalid-produs');
+            hiddenSku.value   = p.codSKU || p.nume;
+            hiddenValid.value = 'true';
+            dropdown.classList.remove('open');
+
+            var rand = wrap.closest('.smart-produs-row');
+            if (rand) {
+                var av = rand.querySelector('.avertizare-produs');
+                if (av) av.style.display = 'none';
+                var pretEl = rand.querySelector('.sp-pret');
+                if (pretEl) pretEl.value = parseFloat(p.pret).toFixed(2);
+                var umLabel = rand.querySelector('.sp-um-label');
+                if (umLabel) umLabel.textContent = um;
+                recalculeazaSmart();
+            }
+        });
+        dropdown.appendChild(item);
+    }
+
+    function creeazaRandSmart(produs, cantitate, tva) {
+        produs    = produs    || '';
+        cantitate = cantitate || 1;
+        tva       = tva       || 'TVA_21';
+
+        var row = mk('div');
+        row.className = 'smart-produs-row';
+        row.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr 1.6fr 32px;gap:6px;align-items:center;margin-bottom:6px;';
+
+        // ── Picker coloana ──
+        var pickerWrap = creeazaPickerSmart();
+        var pickerInput = pickerWrap.querySelector('.picker-input');
+        if (produs) pickerInput.value = produs;
+
+        // Avertizare produs invalid — span complet pe un rand separat sub grid
+        var avertizareEl = document.createElement('div');
+        avertizareEl.className = 'avertizare-produs';
+        avertizareEl.style.cssText = 'display:none;grid-column:1/-1;background:#fff8e6;border:1px solid #f5d78e;' +
+            'border-radius:8px;padding:7px 10px;font-size:11px;color:#854F0B;align-items:center;gap:8px;';
+        avertizareEl.innerHTML =
+            '<span style="flex:1">⚠️ <strong>Produs negăsit în nomenclator.</strong> Adaugă-l mai întâi:</span>' +
+            '<button type="button" class="btn-adauga-nomenclator">+ Adaugă în nomenclator</button>';
+        (function(row, inp) {
+            avertizareEl.querySelector('.btn-adauga-nomenclator').addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                siDeschideProdusNou(row, inp.value);
+            });
+        })(row, pickerInput);
+
+        var inp2 = mk('input', {type:'number', className:'field-input sp-cantitate', value:cantitate, min:1},
+            'padding:7px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%;');
+        inp2.oninput = recalculeazaSmart;
+
+        // Coloana pret cu label unitate masura dinamic
+        var pretWrap = mk('div', {}, 'position:relative;width:100%;');
+        var umLabel = mk('span', {className:'sp-um-label'},
+            'position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:#aaa;pointer-events:none;');
+        umLabel.textContent = 'buc';
+        var inp3 = mk('input', {type:'number', className:'field-input sp-pret', placeholder:'0.00', step:'0.01'},
+            'padding:7px 32px 7px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;width:100%;');
+        inp3.oninput = recalculeazaSmart;
+        pretWrap.appendChild(inp3);
+        pretWrap.appendChild(umLabel);
+
+        var tvaWrap = mk('div');
+        var tvaGrup = mk('div', {}, 'display:flex;gap:3px;');
+        var inpTva = mk('input', {type:'hidden', className:'sp-tva', value:tva});
+        TVA_OPTIONS_SMART.forEach(function(val, i) {
+            var btn = mk('button', {type:'button', className:'tva-smart' + (val === tva ? ' sel' : ''), textContent: TVA_LABELS_SMART[i]});
+            (function(v){ btn.onclick = function(){ selectTVASmartRow(btn, v); }; })(val);
+            tvaGrup.appendChild(btn);
+        });
+        tvaWrap.appendChild(tvaGrup);
+        tvaWrap.appendChild(inpTva);
+
+        var btnX = mk('button', {type:'button', textContent:'✕'},
+            'width:28px;height:28px;background:#fcebeb;color:#A32D2D;border:none;border-radius:7px;cursor:pointer;font-size:14px;');
+        btnX.onclick = function(){ stergeRandSmart(btnX); };
+
+        row.appendChild(pickerWrap);
+        row.appendChild(inp2);
+        row.appendChild(pretWrap);
+        row.appendChild(tvaWrap);
+        row.appendChild(btnX);
+        if (avertizareEl) row.appendChild(avertizareEl);
+        return row;
+    }
+
+    function adaugaRandSmart(produs, cantitate, tva) {
+        document.getElementById('smartProduseContainer').appendChild(creeazaRandSmart(produs, cantitate, tva));
+        recalculeazaSmart();
+    }
+
+    function stergeRandSmart(btn) {
+        var c = document.getElementById('smartProduseContainer');
+        if (c.querySelectorAll('.smart-produs-row').length <= 1) return;
+        btn.closest('.smart-produs-row').remove();
+        recalculeazaSmart();
+    }
+
+    function selectTVASmartRow(btn, val) {
+        var grup = btn.parentNode;
+        grup.querySelectorAll('.tva-smart').forEach(function(b){ b.classList.remove('sel'); });
+        btn.classList.add('sel');
+        grup.nextSibling.value = val;
+        recalculeazaSmart();
+    }
+
+    function selectTVASmart(btn, val) { selectTVASmartRow(btn, val); }
+
+    function recalculeazaSmart() {
+        var total = 0;
+        document.querySelectorAll('.smart-produs-row').forEach(function(row) {
+            var cant = parseFloat(row.querySelector('.sp-cantitate') ? row.querySelector('.sp-cantitate').value : 0) || 0;
+            var pret = parseFloat(row.querySelector('.sp-pret') ? row.querySelector('.sp-pret').value : 0) || 0;
+            var tvaEl = row.querySelector('.sp-tva');
+            var tva = TVA_MAP_SMART[tvaEl ? tvaEl.value : 'TVA_21'] || 0;
+            total += cant * pret * (1 + tva);
+        });
+        document.getElementById('r-totalCalculat').textContent = total.toFixed(2);
+    }
+
+    // ── Modal Produs Nou din Smart Input ─────────────────────────────────────
+    function siDeschideProdusNou(row, numeInitial) {
+        siTargetRow = row;
+        document.getElementById('siPNume').value = numeInitial ? numeInitial.split('[')[0].trim() : '';
+        document.getElementById('siPSKU').value = '';
+        document.getElementById('siPDescriere').value = '';
+        document.getElementById('siPPret').value = '';
+        document.getElementById('siPStoc').value = '0';
+        document.getElementById('siPStocMinim').value = '5';
+        document.getElementById('siPCategorie').value = '';
+        document.getElementById('siPUM').value = 'BUC';
+        document.getElementById('siProdusNouError').style.display = 'none';
+        document.getElementById('siPBtnSalv').textContent = '✓ Salvează și Selectează';
+        document.getElementById('siPBtnSalv').disabled = false;
+        document.getElementById('siModalProdusNou').classList.add('open');
+    }
+
+    function siInchideProdusNou() {
+        document.getElementById('siModalProdusNou').classList.remove('open');
+        siTargetRow = null;
+    }
+
+    function siSalveazaProdusNou() {
+        var nume     = document.getElementById('siPNume').value.trim();
+        var sku      = document.getElementById('siPSKU').value.trim();
+        var pret     = document.getElementById('siPPret').value;
+        var cat      = document.getElementById('siPCategorie').value;
+        var um       = document.getElementById('siPUM').value;
+        var stoc     = document.getElementById('siPStoc').value || '0';
+        var stocMin  = document.getElementById('siPStocMinim').value || '5';
+        var desc     = document.getElementById('siPDescriere').value;
+        var errEl    = document.getElementById('siProdusNouError');
+
+        if (!nume || !sku || !pret || !cat) {
+            errEl.textContent = 'Completează câmpurile obligatorii: Nume, SKU, Preț, Categorie!';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        var btn = document.getElementById('siPBtnSalv');
+        btn.textContent = 'Se salvează...';
+        btn.disabled = true;
+
+        var csrfEl  = document.querySelector('meta[name="_csrf"]');
+        var csrfHEl = document.querySelector('meta[name="_csrf_header"]');
+        var params  = new URLSearchParams({
+            nume: nume, codSKU: sku, pret: pret, categorie: cat,
+            unitateMasura: um, stoc: stoc, stocMinim: stocMin, descriere: desc
+        });
+        if (csrfEl) params.append('_csrf', csrfEl.content);
+
+        fetch('/produse/adauga-ajax', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                [csrfHEl ? csrfHEl.content : 'X-CSRF-TOKEN']: csrfEl ? csrfEl.content : ''
+            },
+            body: params
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(p) {
+            if (p.error) {
+                errEl.textContent = p.error;
+                errEl.style.display = 'block';
+                btn.textContent = '✓ Salvează și Selectează';
+                btn.disabled = false;
+                return;
+            }
+            // Selectează produsul în randul target
+            if (siTargetRow) {
+                var pickerInput = siTargetRow.querySelector('.picker-input');
+                var hiddenSku   = siTargetRow.querySelector('.sp-produs-sku');
+                var hiddenValid = siTargetRow.querySelector('.sp-produs-valid');
+                var avertizare  = siTargetRow.querySelector('.avertizare-produs');
+                var pretEl      = siTargetRow.querySelector('.sp-pret');
+                var umLabelEl   = siTargetRow.querySelector('.sp-um-label');
+
+                if (pickerInput) {
+                    pickerInput.value = p.nume + (p.codSKU ? ' [' + p.codSKU + ']' : '');
+                    pickerInput.classList.add('picker-selected');
+                    pickerInput.classList.remove('invalid-produs');
+                    pickerInput.style.borderColor = '';
+                    pickerInput.style.background = '';
+                }
+                if (hiddenSku)   hiddenSku.value   = p.codSKU || p.nume;
+                if (hiddenValid) hiddenValid.value  = 'true';
+                if (avertizare)  avertizare.style.display = 'none';
+                if (pretEl)      pretEl.value       = parseFloat(p.pret || 0).toFixed(2);
+                recalculeazaSmart();
+            }
+            siInchideProdusNou();
+        })
+        .catch(function() {
+            errEl.textContent = 'Eroare la salvare. Încearcă din nou.';
+            errEl.style.display = 'block';
+            btn.textContent = '✓ Salvează și Selectează';
+            btn.disabled = false;
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!document.querySelector('.smart-produs-row')) adaugaRandSmart();
+    });
+</script>
+
+<!-- ════ MODAL: EROARE PRODUSE INVALIDE ════ -->
+<div class="si-overlay" id="modalEroareProduse">
+    <div class="si-modal">
+        <div class="eroare-icon">⚠️</div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:12px;color:#A32D2D" id="eroareTitlu">Produse negăsite în nomenclator</h2>
+        <p id="eroareMesaj">Produsele introduse nu se regăsesc în nomenclatorul de produse. Verifică casetele de produs.</p>
+        <button onclick="document.getElementById('modalEroareProduse').classList.remove('open')"
+                style="margin-top:20px;padding:10px 28px;background:#6c47ff;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
+            Am înțeles
+        </button>
+    </div>
+</div>
+
+<!-- ════ MODAL: PRODUS NOU ÎN NOMENCLATOR ════ -->
+<div class="si-overlay" id="siModalProdusNou">
+    <div class="si-modal" style="width:580px">
+        <div class="si-modal-header">
+            <h2>+ Produs Nou în Nomenclator</h2>
+            <button class="si-modal-close" onclick="siInchideProdusNou()">×</button>
+        </div>
+        <p style="font-size:13px;color:#888;margin-bottom:16px">
+            Produsul va fi salvat în catalogul tău și selectat automat în comandă.
+        </p>
+        <div id="siProdusNouError" style="display:none;background:#fdecea;color:#A32D2D;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px">Nume Produs *</label>
+                <input type="text" id="siPNume" placeholder="ex: Tricou Alb"
+                       style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none"/>
+            </div>
+            <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px">Cod SKU *</label>
+                <input type="text" id="siPSKU" placeholder="ex: TRC-ALB-001"
+                       style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none"/>
+            </div>
+        </div>
+        <div style="margin-bottom:12px">
+            <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px">Descriere</label>
+            <textarea id="siPDescriere" rows="2" placeholder="Descriere scurtă..."
+                      style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none;resize:vertical"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px">Categorie *</label>
+                <select id="siPCategorie"
+                        style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none">
+                    <option value="">— Selectează —</option>
+                    <option th:each="cat : ${categorii}" th:value="${cat}" th:text="${cat.label}"></option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px">Unitate de Măsură *</label>
+                <select id="siPUM"
+                        style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none">
+                    <option value="BUC">bucată</option>
+                    <option value="KG">kilogram</option>
+                    <option value="L">litru</option>
+                    <option value="M">metru</option>
+                    <option value="PERECHE">pereche</option>
+                    <option value="SET">set</option>
+                    <option value="PACHET">pachet</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+            <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px">Preț vânzare (RON) *</label>
+                <input type="number" id="siPPret" step="0.01" placeholder="0.00"
+                       style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none"/>
+            </div>
+            <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px">Stoc inițial</label>
+                <input type="number" id="siPStoc" value="0" min="0"
+                       style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none"/>
+            </div>
+            <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px">Stoc Minim</label>
+                <input type="number" id="siPStocMinim" value="5"
+                       style="width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;background:#fafafa;outline:none"/>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:16px;border-top:1px solid #f0f0f0">
+            <button type="button" onclick="siInchideProdusNou()"
+                    style="padding:9px 18px;border:1px solid #e5e5e5;border-radius:9px;background:white;font-size:13px;cursor:pointer;color:#555">
+                Anulează
+            </button>
+            <button type="button" onclick="siSalveazaProdusNou()" id="siPBtnSalv"
+                    style="padding:9px 22px;background:#6c47ff;color:white;border:none;border-radius:9px;font-size:13px;cursor:pointer;font-weight:500">
+                ✓ Salvează și Selectează
+            </button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

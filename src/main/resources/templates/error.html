@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Eroare — SocialBiz Assistant</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:white;height:100vh;position:fixed;display:flex;flex-direction:column;padding:24px 16px;border-right:1px solid #eee;z-index:10}
+        .sidebar-brand h2{color:#6c47ff;font-size:16px;font-weight:700}
+        .sidebar-brand p{font-size:12px;color:#aaa;margin-top:2px}
+        .sidebar nav{margin-top:28px;flex:1;overflow-y:auto}
+        .sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;text-decoration:none;color:#555;border-radius:10px;margin-bottom:4px;font-size:14px}
+        .sidebar nav a:hover{background:#f5f0ff;color:#6c47ff}
+        .main{margin-left:220px;padding:32px;flex:1;display:flex;align-items:center;justify-content:center;min-height:100vh}
+        .card{background:white;border-radius:18px;border:1px solid #eee;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+        .icon{font-size:52px;margin-bottom:16px;display:block}
+        .cod{font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;padding:3px 10px;border-radius:20px;display:inline-block}
+        .cod-400{background:#fff3cd;color:#856404}
+        .cod-403{background:#fde8d8;color:#7a3500}
+        .cod-404{background:#e8f0fe;color:#1a56db}
+        .cod-409{background:#fde8d8;color:#7a3500}
+        .cod-500{background:#fce8e8;color:#A32D2D}
+        .titlu{font-size:21px;font-weight:700;color:#1a1a1a;margin-bottom:10px;line-height:1.3}
+        .mesaj{font-size:15px;color:#444;line-height:1.65;margin-bottom:18px}
+        .sfat-box{text-align:left;background:#f9fafb;border:1px solid #e8e8e8;border-radius:10px;padding:12px 16px;margin-bottom:26px}
+        .sfat-label{font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+        .sfat-text{font-size:13px;color:#555;line-height:1.6}
+        .btn-row{display:flex;justify-content:center;flex-wrap:wrap;gap:10px}
+        .btn-back{display:inline-flex;align-items:center;gap:8px;background:#6c47ff;color:white;padding:11px 22px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600}
+        .btn-back:hover{background:#5535cc}
+        .btn-home{display:inline-flex;align-items:center;gap:8px;background:white;color:#6c47ff;padding:11px 22px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600;border:1.5px solid #6c47ff}
+        .btn-home:hover{background:#f5f0ff}
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz Assistant</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit"
+                    style="width:100%;padding:10px 12px;background:none;border:none;
+                   text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;
+                   border-radius:10px;display:flex;align-items:center;gap:10px">
+                ← Deconectează-te
+            </button>
+        </form>
+    </nav>
+</div>
+
+<div class="main">
+    <div class="card">
+
+        <!-- Icoană în funcție de tipul erorii -->
+        <span class="icon"
+              th:text="${codHttp == 404 ? '🔍' : (codHttp == 403 ? '🔒' : (codHttp == 409 ? '⚠️' : (codHttp == 400 ? '📋' : '🔧')))}">⚠️</span>
+
+        <!-- Badge cod HTTP cu culoare contextuală -->
+        <div class="cod"
+             th:classappend="${codHttp == 400 ? 'cod-400' : (codHttp == 403 ? 'cod-403' : (codHttp == 404 ? 'cod-404' : (codHttp == 409 ? 'cod-409' : 'cod-500')))}"
+             th:text="'Eroare ' + ${codHttp != null ? codHttp : 500}">Eroare 500</div>
+
+        <!-- Titlu: CE anume a mers greșit -->
+        <div class="titlu"
+             th:text="${titluEroare != null ? titluEroare : 'A apărut o problemă'}">
+            A apărut o problemă
+        </div>
+
+        <!-- Mesaj: DE CE — în termeni de business, nu tehnic -->
+        <div class="mesaj"
+             th:text="${mesajEroare != null ? mesajEroare : 'Operațiunea nu a putut fi finalizată.'}">
+            Operațiunea nu a putut fi finalizată.
+        </div>
+
+        <!-- Sfat: CE SĂ FACĂ utilizatorul -->
+        <div class="sfat-box" th:if="${detaliiEroare != null and !#strings.isEmpty(detaliiEroare)}">
+            <div class="sfat-label">Ce poți face</div>
+            <div class="sfat-text" th:text="${detaliiEroare}"></div>
+        </div>
+
+        <div class="btn-row">
+            <a th:href="${urlInapoi != null ? urlInapoi : '/dashboard'}" class="btn-back">
+                ← Înapoi
+            </a>
+            <a th:href="@{/dashboard}" class="btn-home">
+                🏠 Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

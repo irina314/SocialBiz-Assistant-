@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <meta th:name="_csrf" th:content="${_csrf.token}"/>
+    <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Export Curier - SocialBiz</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f7; display: flex; min-height: 100vh; }
+        .sidebar { width: 220px; background: white; height: 100vh; position: fixed; display: flex; flex-direction: column; padding: 24px 16px; border-right: 1px solid #eee; }
+        .sidebar-brand h2 { color: #6c47ff; font-size: 16px; font-weight: 700; }
+        .sidebar-brand p { font-size: 12px; color: #aaa; margin-top: 2px; }
+        .sidebar nav { margin-top: 28px; flex: 1; overflow-y: auto; }
+        .sidebar nav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; text-decoration: none; color: #555; border-radius: 10px; margin-bottom: 4px; font-size: 14px; }
+        .sidebar nav a:hover { background: #f5f0ff; color: #6c47ff; }
+        .sidebar nav a.active { background: #f0ebff; color: #6c47ff; font-weight: 500; }
+        .sidebar-footer { background: #6c47ff; border-radius: 10px; padding: 12px; color: white; font-size: 12px; margin-top: auto; }
+        .main { margin-left: 220px; padding: 32px; flex: 1; }
+        .page-header { margin-bottom: 24px; }
+        .page-header h1 { font-size: 24px; font-weight: 600; }
+        .page-header p { color: #888; font-size: 14px; margin-top: 4px; }
+        /* Stats */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+        .stat-card { border-radius: 12px; padding: 18px 20px; border: 1px solid; display: flex; align-items: center; gap: 14px; }
+        .stat-card.green { background: #eaf3de; border-color: #c0e0a0; }
+        .stat-card.orange { background: #faeeda; border-color: #f5d090; }
+        .stat-card.purple { background: #f0ebff; border-color: #d0c0ff; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .stat-card.green .stat-icon { background: #1D9E75; }
+        .stat-card.orange .stat-icon { background: #EF9F27; }
+        .stat-card.purple .stat-icon { background: #6c47ff; }
+        .stat-label { font-size: 13px; font-weight: 500; }
+        .stat-card.green .stat-label { color: #3B6D11; }
+        .stat-card.orange .stat-label { color: #854F0B; }
+        .stat-card.purple .stat-label { color: #534AB7; }
+        .stat-value { font-size: 24px; font-weight: 700; margin-top: 2px; }
+        .stat-card.green .stat-value { color: #1D9E75; }
+        .stat-card.orange .stat-value { color: #EF9F27; }
+        .stat-card.purple .stat-value { color: #6c47ff; }
+        /* Toolbar export */
+        .export-bar { background: white; border-radius: 12px; border: 1px solid #eee; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .selectate-count { font-size: 13px; color: #888; display: flex; align-items: center; gap: 6px; }
+        .curier-select { padding: 8px 14px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 13px; background: white; outline: none; cursor: pointer; }
+        .curier-select:focus { border-color: #6c47ff; }
+        .btn-export { display: flex; align-items: center; gap: 6px; padding: 10px 20px; background: #6c47ff; color: white; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; font-weight: 500; margin-left: auto; }
+        .btn-export:hover { background: #5a38e0; }
+        .btn-export:disabled { background: #c0b0ff; cursor: not-allowed; }
+        /* Table */
+        .table-card { background: white; border-radius: 14px; border: 1px solid #eee; overflow: hidden; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { padding: 12px 16px; text-align: left; font-size: 13px; color: #888; font-weight: 500; border-bottom: 1px solid #f0f0f0; background: #fafafa; }
+        tbody td { padding: 14px 16px; font-size: 14px; color: #333; border-bottom: 1px solid #f7f7f7; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #fafafa; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+        .empty-state p { font-size: 15px; margin-top: 12px; }
+        .empty-state span { font-size: 13px; margin-top: 4px; display: block; }
+        .badge-procesare { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #faeeda; color: #854F0B; display: inline-block; }
+        .badge-finalizat { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #eaf3de; color: #3B6D11; display: inline-block; }
+        input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #6c47ff; }
+        /* Ghid */
+        .ghid { background: #f0ebff; border-radius: 12px; padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; }
+        .ghid-icon { width: 36px; height: 36px; background: #6c47ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .ghid-title { font-size: 14px; font-weight: 600; color: #534AB7; margin-bottom: 4px; }
+        .ghid-text { font-size: 13px; color: #6c47ff; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <h2>SocialBiz Assistant</h2>
+        <p>Platforma ta de vânzări</p>
+    </div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}" class="active">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit"
+                    style="width:100%;padding:10px 12px;background:none;border:none;
+                   text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;
+                   border-radius:10px;display:flex;align-items:center;gap:10px">
+                ← Deconectează-te
+            </button>
+        </form>
+    </nav>
+    <div class="sidebar-footer">
+        <p>Dezvoltat pentru antreprenori</p>
+        <span>© 2025 SocialBiz</span>
+    </div>
+</div>
+
+<div class="main">
+    <div class="page-header">
+        <h1>Export Comenzi pentru Curier</h1>
+        <p>Selectează comenzile finalizate și generează fișierul AWB pentru compania de transport</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card green">
+            <div class="stat-icon">✅</div>
+            <div>
+                <div class="stat-label">Confirmate (gata export)</div>
+                <div class="stat-value" th:text="${nrConfirmate}">0</div>
+            </div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-icon">🚚</div>
+            <div>
+                <div class="stat-label">Deja Expediate</div>
+                <div class="stat-value" th:text="${nrExpediate}">0</div>
+            </div>
+        </div>
+        <div class="stat-card purple">
+            <div class="stat-icon">📋</div>
+            <div>
+                <div class="stat-label">Selectate pentru export</div>
+                <div class="stat-value" th:text="${totalExport}">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar export -->
+    <form id="formExport" th:action="@{/export-curier/download}" method="post">
+        <div class="export-bar">
+            <div class="selectate-count">
+                🔘 <span id="nrSelectate">0</span> comenzi selectate
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:13px;color:#888">Companie curier:</span>
+                <select name="curier" class="curier-select">
+                    <option value="FAN_COURIER">🔴 Fan Courier</option>
+                    <option value="CARGUS">🟠 Cargus</option>
+                    <option value="DPD">🔵 DPD</option>
+                    <option value="SAMEDAY">🟣 Sameday</option>
+                    <option value="GLS">🟢 GLS</option>
+                </select>
+            </div>
+            <button type="button" class="btn-export" id="btnExport" disabled
+                    onclick="deschideConfirmare()">
+                ⬇ Exportă pentru Curier (Excel)
+            </button>
+        </div>
+
+        <!-- Tabel comenzi -->
+        <div class="table-card">
+            <table>
+                <thead>
+                <tr>
+                    <th><input type="checkbox" onclick="selectAll(this)"/></th>
+                    <th>ID Comandă</th>
+                    <th>Dată</th>
+                    <th>Nume Client</th>
+                    <th>Telefon</th>
+                    <th>Adresă Livrare</th>
+                    <th>Cod Poștal</th>
+                    <th>Greutate (kg)</th>
+                    <th>Colete</th>
+                    <th>Conținut</th>
+                    <th>Total (RON)</th>
+                    <th>Plată</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody id="tabelBody">
+                <tr th:if="${#lists.isEmpty(pentruExport)}">
+                    <td colspan="13">
+                        <div class="empty-state">
+                            <div style="font-size:40px">✅</div>
+                            <p>Nicio comandă confirmată pentru export</p>
+                            <span>Confirmă comenzile din modulul Comenzi (NOU → CONFIRMAT) pentru a le putea exporta</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:each="c : ${pentruExport}">
+                    <td>
+                        <input type="checkbox" name="ids" th:value="${c.id}"
+                               onchange="updateSelectate()"/>
+                    </td>
+                    <td style="color:#6c47ff;font-weight:500" th:text="'#' + ${c.id}"></td>
+                    <td style="color:#888;font-size:13px"
+                        th:text="${#temporals.format(c.data, 'dd MMM yyyy')}"></td>
+                    <td style="font-weight:500" th:text="${c.numeClient}"></td>
+                    <td th:text="${c.telefon}"></td>
+                    <td style="font-size:13px;color:#555;max-width:200px"
+                        th:text="${c.adresa}"></td>
+                    <td>
+                        <input type="text" th:name="'cp_' + ${c.id}" th:value="${c.codPostal}" placeholder="ex: 700123"
+                               style="width:80px;padding:6px 8px;border:1px solid #e5e5e5;border-radius:6px;font-size:13px"/>
+                    </td>
+                    <td>
+                        <input type="text" th:name="'gr_' + ${c.id}" value="1"
+                               style="width:55px;padding:6px 8px;border:1px solid #e5e5e5;border-radius:6px;font-size:13px"/>
+                    </td>
+                    <td>
+                        <input type="text" th:name="'cl_' + ${c.id}" value="1"
+                               style="width:45px;padding:6px 8px;border:1px solid #e5e5e5;border-radius:6px;font-size:13px"/>
+                    </td>
+                    <td>
+                        <input type="text" th:name="'ct_' + ${c.id}" th:value="${continutImplicit.get(c.id)}"
+                               style="width:160px;padding:6px 8px;border:1px solid #e5e5e5;border-radius:6px;font-size:13px"/>
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(c.calculeazaTotal(), 1, 2) + ' RON'}"></td>
+                    <td>
+                        <span th:if="${c.statusPlata?.name() == 'RAMBURS'}"
+                              style="font-size:12px;color:#854F0B">🟠 Ramburs</span>
+                        <span th:if="${c.statusPlata?.name() == 'PLATIT_ONLINE'}"
+                              style="font-size:12px;color:#3B6D11">🟢 Card/Online</span>
+                        <span th:if="${c.statusPlata?.name() == 'PLATIT_RAMBURS'}"
+                              style="font-size:12px;color:#3B6D11">✅ Ramburs confirmat</span>
+                    </td>
+                    <td>
+                        <span class="badge-procesare">✅ Confirmat</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <!-- Ghid -->
+    <div class="ghid">
+        <div class="ghid-icon">💡</div>
+        <div>
+            <div class="ghid-title">Ghid Export AWB</div>
+            <div class="ghid-text">
+                Apar doar comenzile cu statusul <strong>✅ Confirmat</strong>. Completează <strong>Cod Poștal</strong>, <strong>Greutate</strong> și <strong>Colete</strong> dacă diferă de implicit, alege curierul și apasă "Exportă pentru Curier (Excel)".
+                Pentru <strong>Cargus</strong>, codul poștal este obligatoriu - fără el platforma respinge AWB-ul.
+                După descărcare, vei putea marca comenzile ca <strong>🚚 Expediat</strong> printr-o confirmare separată.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════ MODAL CONFIRMARE EXPORT ════ -->
+<div id="modalConfirmareExport" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:800;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:16px;padding:28px 32px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,.15);text-align:center">
+        <div style="font-size:40px;margin-bottom:12px">📦</div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:10px">Export Excel generat!</h2>
+        <p id="modalExpediatText" style="font-size:14px;color:#555;line-height:1.6;margin-bottom:20px"></p>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button type="button" onclick="inchideModalExport()"
+                    style="padding:10px 20px;border:1px solid #e5e5e5;border-radius:10px;background:white;font-size:14px;cursor:pointer;color:#555">
+                Nu, lasă NOU
+            </button>
+            <button type="button" onclick="confirmaExpediat()"
+                    style="padding:10px 22px;background:#854F0B;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
+                🚚 Da, marchează Expediat
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ════ MODAL SUCCES EXPEDIAT ════ -->
+<div id="modalSuccesExpediat" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:800;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:16px;padding:28px 32px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,.15);text-align:center">
+        <div style="font-size:40px;margin-bottom:12px">✅</div>
+        <h2 style="font-size:17px;font-weight:700;margin-bottom:8px">Status actualizat!</h2>
+        <p style="font-size:14px;color:#555;margin-bottom:20px">Comenzile selectate au fost marcate ca <strong>🚚 Expediat</strong>.</p>
+        <button onclick="window.location.reload()"
+                style="padding:10px 28px;background:#6c47ff;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
+            OK
+        </button>
+    </div>
+</div>
+
+<script>
+    function selectAll(checkbox) {
+        document.querySelectorAll('input[name=ids]').forEach(cb => cb.checked = checkbox.checked);
+        updateSelectate();
+    }
+
+    function updateSelectate() {
+        const selectate = document.querySelectorAll('input[name=ids]:checked').length;
+        document.getElementById('nrSelectate').textContent = selectate;
+        document.getElementById('btnExport').disabled = selectate === 0;
+    }
+
+    var idsExportate = [];
+
+    function deschideConfirmare() {
+        // Colectează ID-urile selectate
+        idsExportate = Array.from(document.querySelectorAll('input[name=ids]:checked'))
+                            .map(cb => cb.value);
+        if (idsExportate.length === 0) return;
+
+        // Trimite formularul (descarcă CSV)
+        document.getElementById('formExport').submit();
+
+        // Afișează modalul de confirmare după scurt delay (cât durează download-ul)
+        setTimeout(function() {
+            var nr = idsExportate.length;
+            var text = nr === 1
+                ? 'Doriți să actualizați statusul comenzii cu <strong>🚚 Expediat</strong>?'
+                : 'Doriți să actualizați statusul celor <strong>' + nr + ' comenzi</strong> cu <strong>🚚 Expediat</strong>?';
+            document.getElementById('modalExpediatText').innerHTML = text;
+            document.getElementById('modalConfirmareExport').style.display = 'flex';
+        }, 800);
+    }
+
+    function inchideModalExport() {
+        document.getElementById('modalConfirmareExport').style.display = 'none';
+    }
+
+    function confirmaExpediat() {
+        inchideModalExport();
+        var csrfToken  = document.querySelector('meta[name=_csrf]')?.content || '';
+        var csrfHeader = document.querySelector('meta[name=_csrf_header]')?.content || 'X-CSRF-TOKEN';
+        var params = new URLSearchParams();
+        idsExportate.forEach(id => params.append('ids', id));
+        params.append('_csrf', csrfToken);
+
+        fetch('/export-curier/marcheaza-expediat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                [csrfHeader]: csrfToken
+            },
+            body: params
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                document.getElementById('modalSuccesExpediat').style.display = 'flex';
+            } else {
+                alert('Eroare la actualizare: ' + (data.eroare || 'necunoscută'));
+            }
+        })
+        .catch(() => alert('Eroare de rețea. Încearcă din nou.'));
+    }
+</script>
+
+</body>
+</html>

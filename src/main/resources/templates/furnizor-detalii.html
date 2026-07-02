@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${furnizor.nume} + ' — SocialBiz'">Furnizor</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:white;height:100vh;position:fixed;display:flex;flex-direction:column;padding:24px 16px;border-right:1px solid #eee}
+        .sidebar-brand h2{color:#6c47ff;font-size:16px;font-weight:700}
+        .sidebar-brand p{font-size:12px;color:#aaa;margin-top:2px}
+        .sidebar nav{margin-top:28px;flex:1;overflow-y:auto}
+        .sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;text-decoration:none;color:#555;border-radius:10px;margin-bottom:4px;font-size:14px}
+        .sidebar nav a:hover{background:#f5f0ff;color:#6c47ff}
+        .sidebar nav a.active{background:#f0ebff;color:#6c47ff;font-weight:500}
+        .sidebar-footer{background:#6c47ff;border-radius:10px;padding:12px;color:white;font-size:12px;margin-top:auto}
+        .main{margin-left:220px;padding:32px;flex:1;max-width:calc(100vw - 220px)}
+        .back-link{display:inline-flex;align-items:center;gap:6px;color:#6c47ff;text-decoration:none;font-size:13px;margin-bottom:12px}
+        .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+        .furnizor-title{font-size:24px;font-weight:600;color:#1a1a1a}
+        .furnizor-sub{font-size:14px;color:#888;margin-top:4px}
+        .badge-activ{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;background:#d4edda;color:#155724}
+        .badge-inactiv{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;background:#f8d7da;color:#721c24}
+        /* Alerta avize fara factura */
+        .alert-warning{background:#fff8e6;border:1px solid #ffd066;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+        .alert-warning-icon{font-size:22px}
+        .alert-warning-text{font-size:13px;color:#7a5500;flex:1}
+        .alert-warning-text strong{display:block;font-size:14px;margin-bottom:2px}
+        .alert-warning-link{font-size:12px;color:#7a5500;text-decoration:underline;cursor:pointer;white-space:nowrap}
+        /* Flash */
+        .flash-success{background:#d4edda;border:1px solid #c3e6cb;color:#155724;border-radius:10px;padding:12px 18px;margin-bottom:16px;font-size:14px}
+        /* KPI */
+        .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+        .kpi{background:white;border-radius:12px;padding:16px 18px;border:1px solid #eee}
+        .kpi-label{font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+        .kpi-value{font-size:22px;font-weight:700}
+        .kpi-sub{font-size:11px;color:#aaa;margin-top:3px}
+        /* Section */
+        .section{background:white;border-radius:14px;border:1px solid #eee;margin-bottom:24px}
+        .tbl-wrap{overflow-y:auto;max-height:220px;border-radius:0 0 14px 14px}
+        tr.row-prio td:first-child{border-left:3px solid #f5a623}
+        tr.row-prio{background:#fffdf5}
+        .section-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #f0f0f0}
+        .section-title{font-size:15px;font-weight:600;color:#1a1a1a}
+        .section-count{font-size:12px;color:#aaa}
+        /* Table */
+        table{width:100%;border-collapse:collapse}
+        thead th{padding:10px 16px;text-align:left;font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px;background:#fafafa;border-bottom:1px solid #f0f0f0}
+        tbody td{padding:12px 16px;font-size:13px;color:#333;border-bottom:1px solid #f7f7f7;vertical-align:middle}
+        tbody tr:last-child td{border-bottom:none}
+        tbody tr:hover td{background:#fafafa}
+        /* Badges */
+        .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;display:inline-block}
+        .badge-NEPLATITA{background:#fdecea;color:#A32D2D}
+        .badge-PLATITA_PARTIAL{background:#fff5e6;color:#854F0B}
+        .badge-PLATITA{background:#eaf3de;color:#3B6D11}
+        .badge-NEFACTURATA{background:#fff8e6;color:#7a5500}
+        .badge-FACTURATA{background:#eaf3de;color:#3B6D11}
+        .badge-scadenta{background:#fdecea;color:#A32D2D;font-size:10px;margin-left:4px;padding:2px 6px;border-radius:10px}
+        .tip-badge{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:500;display:inline-block}
+        .tip-FACTURA{background:#e0f0ff;color:#1565c0}
+        .tip-AVIZ{background:#fff3e0;color:#e65100}
+        .tip-receptie-badge{font-size:10px;padding:2px 7px;border-radius:8px;background:#e8f1fb;color:#378ADD;font-weight:500;margin-left:6px}
+        /* Buttons */
+        .btn-primary{padding:8px 16px;background:#6c47ff;color:white;border:none;border-radius:9px;font-size:13px;cursor:pointer;font-weight:500;text-decoration:none;display:inline-block}
+        .btn-sm{padding:5px 12px;border-radius:7px;font-size:12px;cursor:pointer;border:none;font-weight:500;white-space:nowrap}
+        .btn-plateste{background:#1D9E75;color:white}
+        .btn-factura{background:#f5a623;color:white}
+        .btn-delete-sm{background:#fcebeb;color:#A32D2D}
+        /* Modal */
+        .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+        .overlay.open{display:flex}
+        .modal{background:white;border-radius:16px;width:580px;max-height:92vh;overflow-y:auto;padding:28px;position:relative}
+        .modal-wide{width:740px}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+        .modal-header h2{font-size:18px;font-weight:600}
+        .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#aaa;line-height:1}
+        .form-group{margin-bottom:14px}
+        .form-group label{display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:5px}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;outline:none;background:#fafafa;color:#333;font-family:inherit}
+        .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#6c47ff;background:white}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0}
+        .btn-cancel{padding:9px 18px;border:1px solid #e5e5e5;border-radius:9px;background:white;font-size:13px;cursor:pointer;color:#555}
+        .btn-save{padding:9px 22px;background:#6c47ff;color:white;border:none;border-radius:9px;font-size:13px;cursor:pointer;font-weight:500}
+        /* Tip document toggle */
+        .tip-toggle{display:flex;gap:0;border:1.5px solid #e5e5e5;border-radius:10px;overflow:hidden;margin-bottom:16px}
+        .tip-toggle-btn{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;border:none;background:white;color:#555;transition:all .15s}
+        .tip-toggle-btn.active-factura{background:#e0f0ff;color:#1565c0}
+        .tip-toggle-btn.active-aviz{background:#fff3e0;color:#e65100}
+        /* Info box */
+        .info-box{border-radius:10px;padding:12px 14px;font-size:12px;margin-bottom:14px;line-height:1.5}
+        .info-box-blue{background:#e8f4fd;color:#1565c0;border:1px solid #b3d9f5}
+        .info-box-orange{background:#fff3e0;color:#e65100;border:1px solid #ffd699}
+        /* Receptie rows */
+        .rec-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:10px}
+        .rec-row select,.rec-row input{padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;outline:none;width:100%}
+        .rec-row select:focus,.rec-row input:focus{border-color:#6c47ff}
+        .btn-remove-row{background:none;border:none;color:#bbb;cursor:pointer;font-size:20px;padding:0 4px;line-height:1}
+        .btn-remove-row:hover{color:#E24B4A}
+        .rec-header-grid{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;margin-bottom:6px}
+        .rec-header-grid span{font-size:11px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+        .rec-total{text-align:right;font-size:15px;font-weight:700;color:#6c47ff;padding:8px 0 0}
+        /* Scadenta conditionala */
+        #rowScadentaReceptie{transition:all .2s}
+        /* Pasii pentru plata */
+        .step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+        .step-dot.activ{background:#6c47ff;color:white}
+        .step-dot.inactiv{background:#eee;color:#aaa}
+        .step-dot.done{background:#1D9E75;color:white}
+        .step-linie{flex:1;height:2px;background:#eee;margin:0 6px}
+        .step-linie.done{background:#1D9E75}
+        .step-row{display:flex;align-items:center;margin-bottom:20px}
+        /* Empty */
+        .empty{text-align:center;padding:36px 20px;color:#aaa;font-size:13px}
+
+        /* Autocomplete produs */
+        .ac-wrap{position:relative}
+        .ac-input{width:100%;padding:8px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa;outline:none;box-sizing:border-box}
+        .ac-input:focus{border-color:#6c47ff;background:white}
+        .ac-hidden{display:none}
+        .ac-dropdown{position:absolute;top:calc(100% + 2px);left:0;right:0;background:white;border:1px solid #e5e5e5;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:200;max-height:200px;overflow-y:auto}
+        .ac-item{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f5f5f5}
+        .ac-item:last-child{border-bottom:none}
+        .ac-item:hover,.ac-item.selected{background:#f0ebff;color:#6c47ff}
+        .ac-item-sub{font-size:11px;color:#aaa;margin-top:1px}
+        .ac-empty{padding:9px 12px;font-size:12px;color:#aaa}
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-brand"><h2>SocialBiz</h2><p>Platforma ta de vanzari</p></div>
+    <nav>
+        <a th:href="@{/dashboard}">📊 Dashboard</a>
+        <a th:href="@{/smart-input}">✨ Smart Input</a>
+        <a th:href="@{/comenzi}">📦 Comenzi</a>
+        <a th:href="@{/export-curier}">🚚 Export Curier</a>
+        <a th:href="@{/retururi}">↩ Retururi</a>
+        <a th:href="@{/produse}">🗃 Produse</a>
+        <a th:href="@{/clienti}">👥 Clienți</a>
+        <a th:href="@{/furnizori}" class="active">🏭 Furnizori</a>
+        <a th:href="@{/influenceri}">🌟 Influenceri</a>
+        <a th:href="@{/analiza-marketing}">📈 Marketing</a>
+        <a th:href="@{/profil}">⚙️ Profil Firmă</a>
+        <form th:action="@{/logout}" method="post" style="margin-top:auto">
+            <button type="submit" style="width:100%;padding:10px 12px;background:none;border:none;text-align:left;cursor:pointer;color:#A32D2D;font-size:14px;border-radius:10px">← Deconecteaza-te</button>
+        </form>
+    </nav>
+    <div class="sidebar-footer"><p>Platforma ta de vanzari</p><span>© 2025 SocialBiz</span></div>
+</div>
+
+<div class="main">
+    <a th:href="@{/furnizori}" class="back-link">← Inapoi la Furnizori</a>
+
+    <!-- Flash success -->
+    <div th:if="${success}" class="flash-success" th:text="${success}"></div>
+
+    <!-- Alerta avize fara factura -->
+    <div th:if="${avizeFaraFactura > 0}" class="alert-warning">
+        <div class="alert-warning-icon">🧾</div>
+        <div class="alert-warning-text">
+            <strong th:text="${avizeFaraFactura} + ' receptii pe aviz de insotire fara factura inregistrata'">—</strong>
+            Inregistreaza factura cand o primesti de la furnizor pentru a crea datoria corecta.
+        </div>
+        <a class="alert-warning-link" onclick="document.getElementById('sectiuneReceptii').scrollIntoView({behavior:'smooth'})">
+            Vezi avizele →
+        </a>
+    </div>
+
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+                <div class="furnizor-title" th:text="${furnizor.nume}">Furnizor</div>
+                <span th:classappend="${furnizor.status.name() == 'ACTIV'} ? ' badge-activ' : ' badge-inactiv'"
+                      th:text="${furnizor.status.name() == 'ACTIV'} ? 'Activ' : 'Inactiv'">Activ</span>
+            </div>
+            <div class="furnizor-sub"
+                 th:text="${(furnizor.categorie != null ? furnizor.categorie.label : '')} + (${furnizor.persoanaContact != null ? ' · ' + furnizor.persoanaContact : ''})"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-primary" style="background:#f5a623"
+                    onclick="document.getElementById('modalReceptie').classList.add('open')">
+                📦 Inregistreaza Receptie
+            </button>
+            <a th:href="@{/furnizori/edit/{id}(id=${furnizor.id})}"
+               class="btn-primary" style="background:white;color:#6c47ff;border:1.5px solid #6c47ff">
+                ✏️ Editeaza
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+        <div class="kpi" style="border-left:4px solid #E24B4A">
+            <div class="kpi-label">Datorie Totala</div>
+            <div class="kpi-value" style="color:#E24B4A" th:text="${datorie} + ' RON'">0 RON</div>
+            <div class="kpi-sub">facturi neachitate</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #6c47ff">
+            <div class="kpi-label">Produse Aprovizionate</div>
+            <div class="kpi-value" style="color:#6c47ff" th:text="${#lists.size(produse)}">0</div>
+            <div class="kpi-sub">din acest furnizor</div>
+        </div>
+        <div class="kpi" style="border-left:4px solid #1D9E75">
+            <div class="kpi-label">Receptii Efectuate</div>
+            <div class="kpi-value" style="color:#1D9E75" th:text="${#lists.size(receptii)}">0</div>
+            <div class="kpi-sub" th:text="${avizeFaraFactura > 0} ? ${avizeFaraFactura} + ' avize fara factura' : 'Toate facturate'"
+                 th:style="${avizeFaraFactura > 0} ? 'color:#f5a623;font-weight:500' : ''">—</div>
+        </div>
+    </div>
+
+    <!-- ══ FACTURI ══ -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-title">💳 Facturi &amp; Plati</div>
+            <div style="display:flex;align-items:center;gap:8px">
+                <span class="section-count" th:text="${#lists.size(facturi)} + ' facturi'">0</span>
+                <input type="text" id="ffF" oninput="filF()" placeholder="🔍 filtreaza..." style="padding:4px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:12px;width:130px;outline:none"/>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(facturi)}" class="empty">
+            Nicio factura. Inregistreaza o receptie pe factura sau ataseaza o factura la un aviz existent.
+        </div>
+        <div class="tbl-wrap">
+            <table id="tF" th:unless="${#lists.isEmpty(facturi)}">
+                <thead style="position:sticky;top:0;background:white"><tr>
+                    <th onclick="srt('tF',0)" style="cursor:pointer">Nr. Factura ⇅</th>
+                    <th onclick="srt('tF',1)" style="cursor:pointer">Data ⇅</th>
+                    <th>Scadenta</th>
+                    <th>Total</th><th>Platit</th><th>Rest</th>
+                    <th onclick="srt('tF',6)" style="cursor:pointer">Status ⇅</th>
+                    <th>Actiuni</th>
+                </tr></thead>
+                <tbody id="bF">
+                <tr th:each="f : ${facturi}"
+                    th:attr="data-s=${f.status.name()}"
+                    th:classappend="${f.status.name() == 'NEPLATITA'} ? 'row-prio' : ''">
+                    <td>
+                        <span style="font-weight:500" th:text="${f.numarFactura}">—</span>
+                        <span th:if="${f.tip != null and f.tip.name() == 'DIN_RECEPTIE'}" class="tip-receptie-badge">din receptie</span>
+                    </td>
+                    <td style="color:#888;font-size:12px"
+                        th:text="${f.dataEmitere != null ? #temporals.format(f.dataEmitere,'dd MMM yyyy') : '—'}">—</td>
+                    <td>
+                        <span th:text="${f.dataScadenta != null ? #temporals.format(f.dataScadenta,'dd MMM yyyy') : '—'}">—</span>
+                        <span th:if="${f.esteScadenta()}" class="badge-scadenta">⚠️ Scadenta</span>
+                    </td>
+                    <td style="font-weight:600" th:text="${#numbers.formatDecimal(f.totalFactura,1,2)} + ' RON'">0</td>
+                    <td style="color:#1D9E75;font-weight:500"
+                        th:text="${#numbers.formatDecimal(f.sumaPlatita,1,2)} + ' RON'">0</td>
+                    <td style="color:#E24B4A;font-weight:600"
+                        th:text="${#numbers.formatDecimal(f.rest,1,2)} + ' RON'">0</td>
+                    <td>
+                    <span class="badge" th:classappend="'badge-' + ${f.status}"
+                          th:text="${f.status.name() == 'NEPLATITA' ? 'Neplatita' :
+                                     f.status.name() == 'PLATITA_PARTIAL' ? 'Partial' : 'Platita'}">—</span>
+                    </td>
+                    <td style="display:flex;gap:6px">
+                        <button th:unless="${f.status.name() == 'PLATITA'}"
+                                class="btn-sm btn-plateste"
+                                th:attr="onclick='deschidePlata(' + ${f.id} + ',' + ${f.rest} + ')'">
+                            💳 Plateste
+                        </button>
+                        <form th:action="@{/furnizori/facturi/{id}/sterge(id=${f.id})}" method="post"
+                              onsubmit="return confirm('Stergi factura?')">
+                            <button type="submit" class="btn-sm btn-delete-sm">🗑</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ══ RECEPTII ══ -->
+    <div class="section" id="sectiuneReceptii">
+        <div class="section-header">
+            <div class="section-title">📦 Receptii Marfa</div>
+            <div style="display:flex;align-items:center;gap:8px">
+                <span class="section-count" th:text="${#lists.size(receptii)} + ' receptii'">0</span>
+                <input type="text" id="ffR" oninput="filR()" placeholder="🔍 cauta..." style="padding:4px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:12px;width:100px;outline:none"/>
+                <select id="ddR" onchange="filR()" style="padding:4px 8px;border:1px solid #e5e5e5;border-radius:8px;font-size:12px;outline:none">
+                    <option value="">Toate</option>
+                    <option value="NEFACTURATA">Fara factura</option>
+                    <option value="FACTURATA">Facturate</option>
+                    <option value="AVIZ">Avize</option>
+                    <option value="FACTURA">Facturi</option>
+                </select>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(receptii)}" class="empty">
+            Nicio receptie inregistrata. Apasa „Inregistreaza Receptie" pentru a adauga prima intrare de marfa.
+        </div>
+        <div class="tbl-wrap">
+            <table id="tR" th:unless="${#lists.isEmpty(receptii)}">
+                <thead style="position:sticky;top:0;background:white"><tr>
+                    <th onclick="srt('tR',0)" style="cursor:pointer">Document ⇅</th>
+                    <th>Tip</th>
+                    <th onclick="srt('tR',2)" style="cursor:pointer">Data ⇅</th>
+                    <th>Produse</th><th>Valoare</th>
+                    <th onclick="srt('tR',5)" style="cursor:pointer">Status ⇅</th>
+                    <th>Actiuni</th>
+                </tr></thead>
+                <tbody id="bR">
+                <tr th:each="r : ${receptii}"
+                    th:attr="data-s=${r.statusFacturare.name()},data-t=${r.tipDocument.name()}"
+                    th:classappend="${r.statusFacturare.name() == 'NEFACTURATA'} ? 'row-prio' : ''">
+                    <td style="font-weight:500" th:text="${r.numarDocument}">—</td>
+                    <td>
+                    <span class="tip-badge" th:classappend="'tip-' + ${r.tipDocument}"
+                          th:text="${r.tipDocument.label}">—</span>
+                    </td>
+                    <td style="color:#888;font-size:12px"
+                        th:text="${#temporals.format(r.dataReceptie,'dd MMM yyyy')}">—</td>
+                    <td th:text="${#lists.size(r.items)} + ' prod.'">0</td>
+                    <td style="font-weight:600;color:#6c47ff"
+                        th:text="${#numbers.formatDecimal(r.calculeazaTotal(),1,2)} + ' RON'">0</td>
+                    <td>
+                    <span class="badge" th:classappend="'badge-' + ${r.statusFacturare}"
+                          th:text="${r.statusFacturare.name() == 'FACTURATA' ? 'Facturata' : 'Fara factura'}">—</span>
+                    </td>
+                    <td>
+                        <!-- Buton "Adauga Factura" doar pt avize fara factura -->
+                        <button th:if="${r.tipDocument.name() == 'AVIZ' and r.statusFacturare.name() == 'NEFACTURATA'}"
+                                class="btn-sm btn-factura"
+                                th:attr="onclick='deschideAtaseazaFactura(' + ${r.id} + ')'">
+                            🧾 Adauga Factura
+                        </button>
+                        <span th:if="${r.tipDocument.name() == 'FACTURA' or r.statusFacturare.name() == 'FACTURATA'}"
+                              style="font-size:12px;color:#1D9E75;font-weight:500">
+                        ✓ <span th:text="${r.numarFacturaAferenta != null ? r.numarFacturaAferenta : r.numarDocument}">—</span>
+                    </span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ══ PRODUSE ══ -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-title">🗃 Produse Aprovizionate</div>
+            <div style="display:flex;align-items:center;gap:8px">
+                <span class="section-count" th:text="${#lists.size(produse)} + ' produse'">0</span>
+                <input type="text" id="ffP" oninput="filP()" placeholder="🔍 filtreaza..." style="padding:4px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:12px;width:130px;outline:none"/>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(produse)}" class="empty">
+            Niciun produs asociat. Inregistreaza o receptie si produsele se vor asocia automat.
+        </div>
+        <div class="tbl-wrap">
+            <table id="tP" th:unless="${#lists.isEmpty(produse)}">
+                <thead style="position:sticky;top:0;background:white"><tr>
+                    <th onclick="srt('tP',0)" style="cursor:pointer">Produs ⇅</th>
+                    <th onclick="srt('tP',1)" style="cursor:pointer">SKU ⇅</th>
+                    <th onclick="srt('tP',2)" style="cursor:pointer">Categorie ⇅</th>
+                    <th onclick="srt('tP',3)" style="cursor:pointer">Pret ⇅</th>
+                    <th onclick="srt('tP',4)" style="cursor:pointer">Stoc ⇅</th>
+                </tr></thead>
+                <tbody id="bP">
+                <tr th:each="p : ${produse}">
+                    <td style="font-weight:500" th:text="${p.nume}">—</td>
+                    <td style="color:#aaa;font-size:12px" th:text="${p.codSKU}">—</td>
+                    <td style="color:#888;font-size:12px" th:text="${p.categorie}">—</td>
+                    <td style="font-weight:600;color:#6c47ff"
+                        th:text="${#numbers.formatDecimal(p.pret,1,2)} + ' RON'">0</td>
+                    <td>
+                    <span th:classappend="${p.esteStocCritic()} ? 'badge badge-NEPLATITA' : ''"
+                          th:text="${p.stoc} + ' buc'">0</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ════ MODAL: RECEPTIE ════ -->
+<div class="overlay" id="modalReceptie">
+    <div class="modal modal-wide">
+        <div class="modal-header">
+            <h2>📦 Inregistrare Receptie Marfa</h2>
+            <button class="modal-close" onclick="document.getElementById('modalReceptie').classList.remove('open')">×</button>
+        </div>
+        <form th:action="@{/furnizori/{id}/receptie(id=${furnizor.id})}" method="post">
+
+            <!-- Toggle tip document -->
+            <div style="margin-bottom:8px">
+                <label style="font-size:13px;font-weight:500;color:#444;display:block;margin-bottom:8px">
+                    Documentul insotitor al receptiei *
+                </label>
+                <div class="tip-toggle">
+                    <button type="button" class="tip-toggle-btn active-factura" id="btnTipFactura"
+                            onclick="selecteazaTip('FACTURA')">
+                        🟦 Factura fiscala
+                    </button>
+                    <button type="button" class="tip-toggle-btn" id="btnTipAviz"
+                            onclick="selecteazaTip('AVIZ')">
+                        🟧 Aviz de insotire
+                    </button>
+                </div>
+                <input type="hidden" name="tipDocument" id="tipDocumentHidden" value="FACTURA"/>
+            </div>
+
+            <!-- Info box dinamic -->
+            <div class="info-box info-box-blue" id="infoBoxTip">
+                <strong>Receptie pe Factura:</strong> Datoria catre furnizor se inregistreaza imediat.
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label id="labelNrDoc">Nr. Factura furnizor *</label>
+                    <input type="text" name="numarDocument" id="inputNrDoc"
+                           placeholder="ex: FAC-2025-001" required/>
+                </div>
+                <div class="form-group" id="rowScadentaReceptie">
+                    <label>Data scadenta plata</label>
+                    <input type="date" name="dataScadenta"/>
+                </div>
+            </div>
+
+            <!-- Produse -->
+            <div style="font-size:13px;font-weight:600;color:#444;margin:4px 0 10px">
+                Produse receptionate
+            </div>
+            <div class="rec-header-grid">
+                <span>Produs</span><span>Cantitate</span><span>Pret achizitie (RON)</span><span></span>
+            </div>
+            <!-- Produse JSON pentru autocomplete -->
+            <div id="produseleJsonData" style="display:none"
+                 th:attr="data-produse=${produseleJson}"></div>
+
+            <div id="recRows">
+                <div class="rec-row">
+                    <div class="ac-wrap">
+                        <input type="text" class="ac-input" placeholder="Tastează minim 3 litere..." autocomplete="off"/>
+                        <input type="hidden" name="produsId" class="ac-hidden" required/>
+                        <div class="ac-dropdown" style="display:none"></div>
+                    </div>
+                    <input type="number" name="cantitate" placeholder="0" min="1" required/>
+                    <input type="number" name="pretAchizitie" placeholder="0.00" step="0.01" min="0" required
+                           oninput="calcTotal()"/>
+                    <button type="button" class="btn-remove-row" onclick="removeRow(this)">×</button>
+                </div>
+            </div>
+            <button type="button" onclick="adaugaRand()"
+                    style="background:none;border:1.5px dashed #6c47ff;color:#6c47ff;border-radius:9px;padding:8px 16px;font-size:13px;cursor:pointer;width:100%;margin-top:8px">
+                + Adauga alt produs
+            </button>
+            <div class="rec-total" id="totalReceptie">Total: 0.00 RON</div>
+
+            <div class="form-group" style="margin-top:14px">
+                <label>Note (optional)</label>
+                <textarea name="note" rows="2" placeholder="Observatii despre receptie, starea marfii..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel"
+                        onclick="document.getElementById('modalReceptie').classList.remove('open')">Anuleaza</button>
+                <button type="submit" class="btn-save" style="background:#f5a623">
+                    ✅ Confirma Receptia
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ════ MODAL: ATASEAZA FACTURA LA AVIZ ════ -->
+<div class="overlay" id="modalAtaseaza">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>🧾 Inregistreaza Factura Aferenta Avizului</h2>
+            <button class="modal-close" onclick="document.getElementById('modalAtaseaza').classList.remove('open')">×</button>
+        </div>
+        <div class="info-box info-box-orange" style="margin-bottom:16px">
+            Aceasta actiune va crea datoria catre furnizor pe baza valorii din receptie.
+            Completeaza datele de pe factura primita.
+        </div>
+        <form id="formAtaseaza" method="post">
+            <input type="hidden" name="_csrf" id="csrfA"/>
+            <div class="form-group">
+                <label>Numar Factura *</label>
+                <input type="text" name="numarFactura" placeholder="ex: FAC-2025-001" required/>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Data Factura</label>
+                    <input type="date" name="dataFactura"/>
+                </div>
+                <div class="form-group">
+                    <label>Data Scadenta</label>
+                    <input type="date" name="dataScadenta"/>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel"
+                        onclick="document.getElementById('modalAtaseaza').classList.remove('open')">Anuleaza</button>
+                <button type="submit" class="btn-save" style="background:#f5a623">
+                    🧾 Inregistreaza Factura
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ════ MODAL: CONFIRMARE PLATA (2 pasi) ════ -->
+<div class="overlay" id="modalPlata">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>💳 Confirmare Plata</h2>
+            <button class="modal-close" onclick="document.getElementById('modalPlata').classList.remove('open')">×</button>
+        </div>
+
+        <!-- Indicator pasi -->
+        <div class="step-row">
+            <div class="step-dot activ" id="dot1">1</div>
+            <div class="step-linie" id="linie1"></div>
+            <div class="step-dot inactiv" id="dot2">2</div>
+        </div>
+
+        <!-- Pasul 1: suma -->
+        <div id="pasul1">
+            <div class="info-box info-box-blue" style="margin-bottom:14px">
+                Introdu suma pe care o platesti. Poti plati partial — restul ramane ca datorie.
+            </div>
+            <div class="form-group">
+                <label>Suma de platit (RON) *</label>
+                <input type="number" id="inputSuma" step="0.01" min="0.01" placeholder="0.00"/>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel"
+                        onclick="document.getElementById('modalPlata').classList.remove('open')">Anuleaza</button>
+                <button type="button" class="btn-save" onclick="mergeLaPasul2()">Continua →</button>
+            </div>
+        </div>
+
+        <!-- Pasul 2: document plata -->
+        <div id="pasul2" style="display:none">
+            <div class="info-box" style="background:#e8f8f2;color:#155724;border:1px solid #b8dfc9;margin-bottom:14px">
+                Completeaza documentul care dovedeste efectuarea platii (necesar pentru evidenta contabila).
+            </div>
+            <form id="formPlata" method="post">
+                <input type="hidden" name="_csrf" id="csrfP"/>
+                <input type="hidden" name="suma" id="hiddenSuma"/>
+                <div class="form-group">
+                    <label>Tip document de plata *</label>
+                    <select name="tipDocumentPlata" id="selectTipDocPlata" required>
+                        <option value="">— Selecteaza tipul —</option>
+                        <option value="Ordin de plata">🏦 Ordin de plata (OP)</option>
+                        <option value="Chitanta">💵 Chitanta (numerar)</option>
+                        <option value="Extras de cont">📄 Extras de cont</option>
+                        <option value="CEC">📋 CEC</option>
+                        <option value="Bilet la ordin">📝 Bilet la ordin</option>
+                        <option value="Card bancar">💳 Card bancar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Numarul documentului *</label>
+                    <input type="text" name="numarDocumentPlata" id="inputNrDocPlata"
+                           placeholder="ex: OP 12345, Chitanta nr. 456..." required/>
+                </div>
+                <div class="form-group">
+                    <label>Data platii</label>
+                    <input type="date" name="dataPlata" id="inputDataPlata"/>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="inapoiPas1()">← Inapoi</button>
+                    <button type="submit" class="btn-save" style="background:#1D9E75">
+                        ✅ Confirma Plata
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Init AC on first row
+    document.querySelectorAll('#recRows .rec-row').forEach(acInitRow);
+
+    // ── Tip document receptie ─────────────────────────────────────────────────
+    function selecteazaTip(tip) {
+        document.getElementById('tipDocumentHidden').value = tip;
+        var btnF = document.getElementById('btnTipFactura');
+        var btnA = document.getElementById('btnTipAviz');
+        var info = document.getElementById('infoBoxTip');
+        var labelNr = document.getElementById('labelNrDoc');
+        var inputNr = document.getElementById('inputNrDoc');
+        var rowSc   = document.getElementById('rowScadentaReceptie');
+
+        if (tip === 'FACTURA') {
+            btnF.classList.add('active-factura');
+            btnA.classList.remove('active-aviz');
+            info.className = 'info-box info-box-blue';
+            info.innerHTML = '<strong>Receptie pe Factura:</strong> Datoria catre furnizor se inregistreaza imediat.';
+            labelNr.textContent = 'Nr. Factura furnizor *';
+            inputNr.placeholder = 'ex: FAC-2025-001';
+            rowSc.style.display = '';
+        } else {
+            btnA.classList.add('active-aviz');
+            btnF.classList.remove('active-factura');
+            info.className = 'info-box info-box-orange';
+            info.innerHTML = '<strong>Receptie pe Aviz:</strong> Datoria se va crea cand inregistrezi factura aferenta avizului.';
+            labelNr.textContent = 'Nr. Aviz de insotire *';
+            inputNr.placeholder = 'ex: AVI-2025-001';
+            rowSc.style.display = 'none';
+        }
+    }
+
+    // ── Randuri dinamice receptie ─────────────────────────────────────────────
+    // JSON produse injectat din atribut data
+    var produseleJson = [];
+    var dataEl = document.getElementById('produseleJsonData');
+    if (dataEl) {
+        try { produseleJson = JSON.parse(dataEl.getAttribute('data-produse') || '[]'); } catch(e) {}
+    }
+    window.produseleJson = produseleJson;
+
+    // ── Autocomplete shared logic ─────────────────────────────────────────
+    // produseleJson este injectat ca variabila globala din Thymeleaf
+    function acInit(inputEl, hiddenEl, dropdownEl) {
+        inputEl.addEventListener('input', function() {
+            var q = this.value.trim().toLowerCase();
+            dropdownEl.innerHTML = '';
+            hiddenEl.value = '';
+            if (q.length < 3) { dropdownEl.style.display = 'none'; return; }
+            var matches = (window.produseleJson || []).filter(function(p) {
+                return p.nume.toLowerCase().includes(q) || p.codSKU.toLowerCase().includes(q);
+            }).slice(0, 8);
+            if (!matches.length) {
+                dropdownEl.innerHTML = '<div class="ac-empty">Niciun produs găsit</div>';
+                dropdownEl.style.display = 'block'; return;
+            }
+            matches.forEach(function(p) {
+                var div = document.createElement('div');
+                div.className = 'ac-item';
+                div.innerHTML = '<strong>' + p.nume + '</strong> <span style="color:#aaa;font-size:11px">' + p.codSKU + '</span>'
+                    + '<div class="ac-item-sub">Stoc: ' + p.stoc + ' buc · ' + p.pret.toFixed(2) + ' RON</div>';
+                div.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    inputEl.value = p.nume + ' (' + p.codSKU + ')';
+                    hiddenEl.value = p.id;
+                    dropdownEl.style.display = 'none';
+                });
+                dropdownEl.appendChild(div);
+            });
+            dropdownEl.style.display = 'block';
+        });
+        inputEl.addEventListener('blur', function() {
+            setTimeout(function(){ dropdownEl.style.display = 'none'; }, 150);
+        });
+    }
+
+    // Inițializează AC pe toate randurile existente si viitoare
+    function acInitRow(row) {
+        var inp = row.querySelector('.ac-input');
+        var hid = row.querySelector('.ac-hidden');
+        var drp = row.querySelector('.ac-dropdown');
+        if (inp && hid && drp) acInit(inp, hid, drp);
+    }
+
+
+    function adaugaRand() {
+        var div = document.createElement('div');
+        div.className = 'rec-row';
+        div.innerHTML = firstSelect
+            + '<input type="number" name="cantitate" placeholder="0" min="1" required/>'
+            + '<input type="number" name="pretAchizitie" placeholder="0.00" step="0.01" min="0" required oninput="calcTotal()"/>'
+            + '<button type="button" class="btn-remove-row" onclick="removeRow(this)">×</button>';
+        document.getElementById('recRows').appendChild(div);
+    }
+    function removeRow(btn) {
+        if (document.querySelectorAll('#recRows .rec-row').length > 1)
+            btn.closest('.rec-row').remove();
+        calcTotal();
+    }
+    function calcTotal() {
+        var total = 0;
+        document.querySelectorAll('#recRows .rec-row').forEach(function(row) {
+            total += (parseFloat(row.querySelector('[name=cantitate]').value)||0)
+                   * (parseFloat(row.querySelector('[name=pretAchizitie]').value)||0);
+        });
+        document.getElementById('totalReceptie').textContent = 'Total: ' + total.toFixed(2) + ' RON';
+    }
+
+    // ── Ataseaza factura la aviz ──────────────────────────────────────────────
+    function deschideAtaseazaFactura(receptieId) {
+        document.getElementById('formAtaseaza').action = '/furnizori/receptie/' + receptieId + '/ataseaza-factura';
+        document.getElementById('csrfA').value = (document.cookie.match('(^|;)\\s*XSRF-TOKEN=([^;]+)')||[])[2]||'';
+        document.getElementById('modalAtaseaza').classList.add('open');
+    }
+
+    // ── Modal plata 2 pasi ────────────────────────────────────────────────────
+    var facturaIdCurent = null;
+    function deschidePlata(facturaId, rest) {
+        facturaIdCurent = facturaId;
+        document.getElementById('inputSuma').value = rest.toFixed(2);
+        document.getElementById('inputSuma').max = rest;
+        document.getElementById('pasul1').style.display = '';
+        document.getElementById('pasul2').style.display = 'none';
+        document.getElementById('dot1').className = 'step-dot activ';
+        document.getElementById('dot2').className = 'step-dot inactiv';
+        document.getElementById('linie1').className = 'step-linie';
+        document.getElementById('modalPlata').classList.add('open');
+    }
+    function mergeLaPasul2() {
+        var suma = parseFloat(document.getElementById('inputSuma').value);
+        if (!suma || suma <= 0) { alert('Introdu o suma valida!'); return; }
+        document.getElementById('hiddenSuma').value = suma.toFixed(2);
+        document.getElementById('formPlata').action = '/furnizori/facturi/' + facturaIdCurent + '/plateste';
+        document.getElementById('csrfP').value = (document.cookie.match('(^|;)\\s*XSRF-TOKEN=([^;]+)')||[])[2]||'';
+        if (!document.getElementById('inputDataPlata').value) {
+            document.getElementById('inputDataPlata').valueAsDate = new Date();
+        }
+        document.getElementById('dot1').className = 'step-dot done';
+        document.getElementById('linie1').className = 'step-linie done';
+        document.getElementById('dot2').className = 'step-dot activ';
+        document.getElementById('pasul1').style.display = 'none';
+        document.getElementById('pasul2').style.display = '';
+    }
+    function inapoiPas1() {
+        document.getElementById('dot1').className = 'step-dot activ';
+        document.getElementById('linie1').className = 'step-linie';
+        document.getElementById('dot2').className = 'step-dot inactiv';
+        document.getElementById('pasul1').style.display = '';
+        document.getElementById('pasul2').style.display = 'none';
+    }
+
+    var _sd={};
+    function srt(id,col){var tb=document.getElementById(id).querySelector('tbody');var rows=Array.from(tb.rows);var d=_sd[id+col]==='a'?-1:1;_sd[id+col]=d===1?'a':'d';rows.sort(function(a,b){var ca=a.cells[col]?a.cells[col].textContent.trim():'';var cb=b.cells[col]?b.cells[col].textContent.trim():'';return ca.localeCompare(cb,'ro',{numeric:true})*d;});rows.forEach(function(r){tb.appendChild(r);});}
+    function filF(){var q=document.getElementById('ffF').value.toLowerCase();document.querySelectorAll('#bF tr').forEach(function(r){r.style.display=(!q||r.textContent.toLowerCase().includes(q))?'':'none';});}
+    function filR(){var q=(document.getElementById('ffR').value||'').toLowerCase();var v=document.getElementById('ddR').value;document.querySelectorAll('#bR tr').forEach(function(r){r.style.display=((!q||r.textContent.toLowerCase().includes(q))&&(!v||r.dataset.s===v||r.dataset.t===v))?'':'none';});}
+    function filP(){var q=document.getElementById('ffP').value.toLowerCase();document.querySelectorAll('#bP tr').forEach(function(r){r.style.display=(!q||r.textContent.toLowerCase().includes(q))?'':'none';});}
+    (function(){function mf(bid,attr,val){var tb=document.getElementById(bid);if(!tb)return;var rows=Array.from(tb.rows);tb.innerHTML='';rows.sort(function(a,b){var av=a.dataset[attr]===val?0:1;var bv=b.dataset[attr]===val?0:1;return av-bv;}).forEach(function(r){tb.appendChild(r);});}mf('bF','s','NEPLATITA');mf('bR','s','NEFACTURATA');})();
+</script>
+</body>
+</html>
