@@ -126,16 +126,18 @@ public class ImportCsvService {
         comanda.getItems().add(item);
     }
 
-    // --- WooCommerce ----------------------------------------------------------
+    // --- WooCommerce ------------------------------------------------------
     //
-    // Coloane relevante din exportul WooCommerce Orders CSV (plugin standard):
-    //   Order ID, Order Status, Billing First Name, Billing Last Name,
-    //   Billing Phone, Billing Address 1, Billing City, Billing Postcode,
-    //   Payment Method, Coupon Code,
-    //   Item #{n} Name, Item #{n} Quantity, Item #{n} Total
+    // Coloane relevante din exportul real WooCommerce Orders CSV
+    // (plugin WP All Export, "Add products as: rows"):
+    //   Order Number, Order Status, First Name (Billing), Last Name (Billing),
+    //   Address 1&2 (Billing), City (Billing), Postcode (Billing),
+    //   Phone (Billing), Payment Method Title, Coupon Code,
+    //   Item Name, Quantity (- Refund), Item Cost
     //
-    // WooCommerce exporta un order per rand, cu produsele inline
-    // (Item #1 Name, Item #2 Name, etc.) pana la maxim ~10 produse.
+    // La fel ca la Shopify, WooCommerce (cu acest plugin) exporta un rand
+    // per produs, iar comenzile cu mai multe produse au acelasi
+    // "Order Number" repetat pe randuri consecutive.
 
     private RezultatImport importaWooCommerce(MultipartFile file) throws Exception {
         int importate = 0, sarite = 0;
@@ -149,57 +151,80 @@ public class ImportCsvService {
                      .build()
                      .parse(reader)) {
 
+            String ultimulOrderId = null;
+            Comanda comandaCurenta = null;
+
             for (CSVRecord row : parser) {
                 try {
-                    String orderId = csv(row, "Order ID");
+                    String orderId = csv(row, "Order Number");
                     if (orderId.isBlank()) continue;
 
-                    Comanda comanda = new Comanda();
-                    comanda.setSursa("WOOCOMMERCE");
+                    // Rand nou pentru aceeasi comanda - adauga doar produsul
+                    if (orderId.equals(ultimulOrderId) && comandaCurenta != null) {
+                        adaugaItemWooCommerce(comandaCurenta, row);
+                        continue;
+                    }
 
-                    String prenume = csv(row, "Billing First Name");
-                    String nume    = csv(row, "Billing Last Name");
-                    comanda.setNumeClient((prenume + " " + nume).trim());
-                    comanda.setTelefon(csv(row, "Billing Phone"));
-                    comanda.setAdresa(construiesteAdresa(
-                            csv(row, "Billing Address 1"),
-                            csv(row, "Billing City"),
-                            csv(row, "Billing Postcode")));
-                    comanda.setCodPromotional(csv(row, "Coupon Code"));
+                    // Salveaza comanda anterioara daca exista
+                    if (comandaCurenta != null) {
+                        comandaService.salveaza(comandaCurenta);
+                        importate++;
+                    }
 
-                    String metodaPlata = csv(row, "Payment Method").toLowerCase();
-                    comanda.setStatusPlata(
-                            metodaPlata.contains("card") || metodaPlata.contains("stripe") || metodaPlata.contains("paypal")
+                    // Creeaza comanda noua
+                    comandaCurenta = new Comanda();
+                    comandaCurenta.setSursa("WOOCOMMERCE");
+
+                    String prenume = csv(row, "First Name (Billing)");
+                    String nume    = csv(row, "Last Name (Billing)");
+                    comandaCurenta.setNumeClient((prenume + " " + nume).trim());
+                    comandaCurenta.setTelefon(csv(row, "Phone (Billing)"));
+                    comandaCurenta.setAdresa(construiesteAdresa(
+                            csv(row, "Address 1&2 (Billing)"),
+                            csv(row, "City (Billing)"),
+                            ""));
+                    comandaCurenta.setCodPostal(csv(row, "Postcode (Billing)"));
+                    comandaCurenta.setCodPromotional(csv(row, "Coupon Code"));
+
+                    String metodaPlata = csv(row, "Payment Method Title");
+                    comandaCurenta.setMetodaPlata(metodaPlata);
+                    String metodaPlataLower = metodaPlata.toLowerCase();
+                    comandaCurenta.setStatusPlata(
+                            metodaPlataLower.contains("card") || metodaPlataLower.contains("stripe")
+                                    || metodaPlataLower.contains("paypal") || metodaPlataLower.contains("online")
                                     ? Comanda.StatusPlata.PLATIT_ONLINE
                                     : Comanda.StatusPlata.RAMBURS);
 
-                    // Parcurge Item #1 ... Item #20
-                    for (int i = 1; i <= 20; i++) {
-                        String numeItem = csvOpt(row, "Item #" + i + " Name");
-                        if (numeItem == null || numeItem.isBlank()) break;
-
-                        ComandaItem item = new ComandaItem();
-                        item.setComanda(comanda);
-                        item.setIdProdus(numeItem);
-                        item.setCantitate(parseIntSafe(csvOpt(row, "Item #" + i + " Quantity"), 1));
-                        item.setPretUnitar(parseDoubleSafe(csvOpt(row, "Item #" + i + " Total"), 0.0));
-                        item.setCotaTVA(ComandaItem.CotaTVA.TVA_21);
-                        comanda.getItems().add(item);
-                    }
-
-                    if (comanda.getItems().isEmpty()) { sarite++; continue; }
-
-                    comandaService.salveaza(comanda);
-                    importate++;
+                    adaugaItemWooCommerce(comandaCurenta, row);
+                    ultimulOrderId = orderId;
 
                 } catch (Exception e) {
                     erori.add("Rand " + row.getRecordNumber() + ": " + e.getMessage());
                     sarite++;
                 }
             }
+
+            // Salveaza ultima comanda
+            if (comandaCurenta != null) {
+                comandaService.salveaza(comandaCurenta);
+                importate++;
+            }
         }
 
         return new RezultatImport(importate, sarite, erori);
+    }
+
+    private void adaugaItemWooCommerce(Comanda comanda, CSVRecord row) {
+        String numeProdus = csv(row, "Item Name");
+        if (numeProdus.isBlank()) return;
+
+        ComandaItem item = new ComandaItem();
+        item.setComanda(comanda);
+        item.setIdProdus(numeProdus);
+        item.setCantitate(parseIntSafe(csv(row, "Quantity (- Refund)"), 1));
+        item.setPretUnitar(parseDoubleSafe(csv(row, "Item Cost"), 0.0));
+        item.setCotaTVA(ComandaItem.CotaTVA.TVA_21); // WooCommerce nu exporta TVA per produs
+        comanda.getItems().add(item);
     }
 
     // --- Utilitati ------------------------------------------------------------
