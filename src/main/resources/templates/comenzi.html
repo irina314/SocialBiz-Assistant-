@@ -254,14 +254,20 @@
         </ul>
     </div>
 
-    <form id="formSelectate" th:action="@{/comenzi/sterge-selectate}" method="post">
+    <!-- Formular real pentru "Șterge Selectate", plasat separat ca să nu mai fie imbricat
+         cu formularele individuale de status/ștergere din fiecare rând al tabelului
+         (HTML nu permite <form> în interiorul altui <form> — browserul le ignora pe cele
+         din interior, motiv pentru care butoanele de status nu reacționau). Checkbox-urile
+         și butonul de mai jos se leagă de acest formular prin atributul form="formSelectate". -->
+    <form id="formSelectate" th:action="@{/comenzi/sterge-selectate}" method="post"></form>
+    <div>
         <div class="toolbar">
             <div class="search-box">
                 <span class="search-icon">&#128269;</span>
                 <input type="text" placeholder="Caută după nume, telefon sau ID..."
                        oninput="filtreaza(this.value)" id="searchInput"/>
             </div>
-            <button type="submit" class="btn-danger"
+            <button type="submit" form="formSelectate" class="btn-danger"
                     onclick="return confirm('Ștergi comenzile selectate?')">
                 🗑 Șterge Selectate
             </button>
@@ -352,7 +358,7 @@
                 <tr th:each="c : ${comenzi}"
                     th:classappend="${c.status.name() == 'EXPEDIAT'} ? 'row-expediat' : (${c.status.name() == 'NOU'} ? 'row-nou' : (${c.status.name() == 'ANULAT'} ? 'row-anulat' : ''))"
                     th:attr="data-status=${c.status.name()},data-sursa=${c.sursa != null ? c.sursa : ''},data-plata=${c.statusPlata.name()},data-search=${c.numeClient + ' ' + (c.telefon ?: '') + ' #' + c.id},data-data=${c.data != null ? #temporals.format(c.data, 'yyyy-MM-dd HH:mm:ss') : ''},data-client=${c.numeClient != null ? c.numeClient : ''}">
-                    <td><input type="checkbox" name="ids" th:value="${c.id}"/></td>
+                    <td><input type="checkbox" name="ids" form="formSelectate" th:value="${c.id}"/></td>
                     <td>
                         <span style="color:#6c47ff;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:3px"
                               th:text="'#' + ${c.id}"
@@ -445,7 +451,7 @@
                 </tbody>
             </table>
         </div>
-    </form>
+    </div>
 
     <div class="stats-row">
         <div class="stat-card blue">

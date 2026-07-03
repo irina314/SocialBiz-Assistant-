@@ -295,7 +295,8 @@
                          th:text="${s.influencer.codPromotional != null ? s.influencer.codPromotional : '—'}">—</div>
                 </div>
                 <button class="cod-copy"
-                        th:onclick="'copiazaCod(\'' + ${s.influencer.codPromotional} + '\', this)'"
+                        th:attr="data-cod=${s.influencer.codPromotional}"
+                        onclick="copiazaCod(this.dataset.cod, this)"
                         th:if="${s.influencer.codPromotional != null}">
                     📋 Copiază
                 </button>
@@ -345,16 +346,16 @@
             <!-- Actiuni -->
             <div class="card-actions">
                 <button class="btn-edit"
-                        th:onclick="'deschideEdit(' + ${s.influencer.id}
-                            + ',\'' + ${s.influencer.nume}
-                            + '\',\'' + ${s.influencer.platforma != null ? s.influencer.platforma : ''}
-                            + '\',\'' + ${s.influencer.username != null ? s.influencer.username : ''}
-                            + '\',\'' + ${s.influencer.codPromotional != null ? s.influencer.codPromotional : ''}
-                            + '\',\'' + ${s.influencer.telefon != null ? s.influencer.telefon : ''}
-                            + '\',\'' + ${s.influencer.email != null ? s.influencer.email : ''}
-                            + '\',' + ${s.influencer.comisionProcent != null ? s.influencer.comisionProcent : 0}
-                            + ',\'' + ${s.influencer.note != null ? s.influencer.note : ''}
-                            + '\')'">
+                        th:attr="data-id=${s.influencer.id},
+                                 data-nume=${s.influencer.nume},
+                                 data-platforma=${s.influencer.platforma != null ? s.influencer.platforma : ''},
+                                 data-username=${s.influencer.username != null ? s.influencer.username : ''},
+                                 data-cod=${s.influencer.codPromotional != null ? s.influencer.codPromotional : ''},
+                                 data-tel=${s.influencer.telefon != null ? s.influencer.telefon : ''},
+                                 data-email=${s.influencer.email != null ? s.influencer.email : ''},
+                                 data-comision=${s.influencer.comisionProcent != null ? s.influencer.comisionProcent : 0},
+                                 data-note=${s.influencer.note != null ? s.influencer.note : ''}"
+                        onclick="deschideEditDinDataset(this)">
                     ✏️ Editează
                 </button>
                 <form th:action="@{/influenceri/toggle/{id}(id=${s.influencer.id})}" method="post" style="display:inline">
@@ -558,6 +559,12 @@
             btn.textContent = '✅ Copiat!';
             setTimeout(function() { btn.textContent = '📋 Copiază'; }, 2000);
         });
+    }
+
+    /* Deschide modal edit citind valorile din data-* (sigur, indiferent ce caractere apar în nume/notă) */
+    function deschideEditDinDataset(btn) {
+        var d = btn.dataset;
+        deschideEdit(d.id, d.nume, d.platforma, d.username, d.cod, d.tel, d.email, d.comision, d.note);
     }
 
     /* Deschide modal edit cu date pre-completate */
