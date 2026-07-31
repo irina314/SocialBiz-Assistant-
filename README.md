@@ -1,0 +1,1 @@
+Daca vei citi vreo data acest text, sa stii ca ai procedat foarte urat, si asa ceva de la tine nu mam asteptat, si acel buchet e foarte slab :)). Dar cum se zice fiecare are pretul sau cea ce ai demonstrat 
